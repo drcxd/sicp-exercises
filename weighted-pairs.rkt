@@ -30,6 +30,7 @@
                 (stream-cdr s2))
     (weighted-pairs (stream-cdr s1) (stream-cdr s2) f)
     f)))
+(#%provide weighted-pairs)
 
 (define a
   (weighted-pairs

@@ -8,5 +8,5 @@
 (define (partial-sums s)
   (define ps
     (cons-stream (car s)
-                 (stream-add ps (stream-cdr s))))
+                 (add-streams ps (stream-cdr s))))
   ps)

@@ -1,9 +1,7 @@
 #lang sicp
 
 (#%require "./stream.rkt")
-
-(define (average x y)
-  (/ (+ x y) 2))
+(#%require "./average.rkt")
 
 (define (sqrt-improve guess x)
   (average guess (/ x guess)))

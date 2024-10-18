@@ -3,11 +3,12 @@
 (#%provide stream-car
            stream-cdr
            stream-map
-           stream-add
            stream-ref
            stream-for-each
            stream-filter
-           display-stream-n)
+           display-stream-n
+           add-streams
+           scale-stream)
 
 (define (stream-car s) (car s))
 (define (stream-cdr s) (force (cdr s)))
@@ -20,8 +21,11 @@
        (apply stream-map
               (cons proc (map stream-cdr argstreams))))))
 
-(define (stream-add s1 s2)
+(define (add-streams s1 s2)
   (stream-map + s1 s2))
+
+(define (scale-stream stream factor)
+  (stream-map (lambda (x) (* x factor)) stream))
 
 (define (stream-ref s n)
   (if (= n 0)
