@@ -8,7 +8,8 @@
            stream-filter
            display-stream-n
            add-streams
-           scale-stream)
+           scale-stream
+           map-successive-pairs)
 
 (define (stream-car s) (car s))
 (define (stream-cdr s) (force (cdr s)))
@@ -58,3 +59,8 @@
       (begin
         (display-line (stream-car s))
         (display-stream-n (stream-cdr s) (- n 1)))))
+
+(define (map-successive-pairs f s)
+  (cons-stream
+   (f (stream-car s) (stream-car (stream-cdr s)))
+   (map-successive-pairs f (stream-cdr (stream-cdr s)))))
