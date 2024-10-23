@@ -63,7 +63,7 @@
          (make-application
           (make-lambda '(first)
                        (make-if 'first 'first (expand-or-expressions (rest-exps exps))))
-          (first-exp exps)))))
+          (list (first-exp exps))))))
 
 ;; and is implemented in a similar way
 
@@ -73,10 +73,9 @@
 (define (expand-and-expressions exps)
   (cond ((null? exps) 'true)
         ((last-exp? exps)
-         ;; TODO: fix make-application usage
          (make-application (make-lambda '(exp)
                                         (make-if 'exp 'exp 'false))
-                           (first-exp exps)))
+                           (list (first-exp exps))))
         (else
          (make-if (first-exp exps)
                   (expand-and-expressions (rest-exps exps))

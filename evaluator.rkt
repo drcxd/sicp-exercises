@@ -152,3 +152,6 @@
             (make-if (cond-predicate first)
                      (sequence->exp (cond-actions first))
                      (expand-clauses rest))))))
+
+(define (make-application operator operands)
+  (cons operator operands))

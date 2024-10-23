@@ -20,15 +20,13 @@
                 (error "ELSE clause isn't last: COND->IF"
                        clauses))
             (if (recipient-clause? first)
-                ;; TODO: fix make-application usage
                 (make-application
                  (make-lambda '(test recipient)
-                              (make-application 'recipient 'test))
-                 (clause-test first)
-                 (clause-recipient first))
+                              (make-application 'recipient (list 'test)))
+                 (list (clause-test first) (clause-recipient first)))
                 (make-if (cond-predicate first)
-                     (sequence->exp (cond-actions first))
-                     (expand-clauses rest)))))))
+                         (sequence->exp (cond-actions first))
+                         (expand-clauses rest)))))))
 
 (define (recipient-clause? clause)
   (eq? '=> (cadr clause)))
