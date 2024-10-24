@@ -23,7 +23,7 @@
                 (make-application
                  (make-lambda '(test recipient)
                               (make-application 'recipient (list 'test)))
-                 (list (clause-test first) (clause-recipient first)))
+                 (list (clause-test first) (sequence->exp (clause-recipient first))))
                 (make-if (cond-predicate first)
                          (sequence->exp (cond-actions first))
                          (expand-clauses rest)))))))
@@ -35,4 +35,4 @@
   (car clause))
 
 (define (clause-recipient clause)
-  (caddr clause))
+  (cddr clause))
