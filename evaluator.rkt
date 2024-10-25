@@ -1,5 +1,7 @@
 #lang sicp
 
+(define apply-in-underlying-scheme apply)
+
 (define (eval exp env)
   (cond ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
@@ -197,8 +199,8 @@
     (if (eq? env the-empty-environment)
         (error "Unbound variable" var)
         (let ((frame (first-frame env)))
-          (scan (frame-vars frame)
-                (frame-vals frame)))))
+          (scan (frame-variables frame)
+                (frame-values frame)))))
   (env-loop env))
 
 (define (set-variable-value! var val env)
@@ -213,7 +215,7 @@
         (let ((frame (first-frame env)))
           (scan (frame-variables frame)
                 (frame-values frame)))))
-  (evn-loop env))
+  (env-loop env))
 
 (define (define-variable! var val env)
   (let ((frame (first-frame env)))
@@ -223,3 +225,34 @@
             ((eq? var (car vars)) (set-car! vals val))
             (else (scan (cdr vars) (cdr vals)))))
     (scan (frame-variables frame) (frame-values frame))))
+
+(define (setup-environment)
+  (let ((initial-env
+         (extend-environment (primitive-procedure-names)
+                             (primitive-procedure-objects)
+                             the-empty-environment)))
+    (define-variable! 'true true initial-env)
+    (define-variable! 'false false initial-env)
+    initial-env))
+
+(define the-global-environment (setup-environment))
+
+(define (primitive-procedure? proc)
+  (tagged-list? proc 'primitive))
+
+(define (primitive-implementation proc) (cadr proc))
+
+(define primitive-procedures
+  (list (list 'car car)
+        (list 'cdr cdr)
+        (list 'cons cons)
+        (list 'null? null?)))
+
+(define primitive-procedure-names
+  (map car primitive-procedures))
+
+(define primitive-procedure-objects
+  (map (lambda (proc) (list 'primitve (cadr proc))) primitive-procedures))
+
+(define (apply-primitive-procedure proc args)
+  (apply-in-underlying-scheme (primitive-implementation proc) args))
