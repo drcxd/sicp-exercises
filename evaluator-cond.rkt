@@ -4,6 +4,7 @@
 (#%require "./evaluator.rkt")
 (#%require "./evaluator-begin.rkt")
 (#%require "./evaluator-if.rkt")
+(#%require "./evaluator-lambda.rkt")
 
 (define (cond? exp) (tagged-list? exp 'cond))
 (define (cond-clauses exp) (cdr exp))
@@ -22,10 +23,24 @@
                 (sequence->exp (cond-actions first))
                 (error "ELSE clause isn't last: COND->IF"
                        clauses))
-            (make-if (cond-predicate first)
-                     (sequence->exp (cond-actions first))
-                     (expand-clauses rest))))))
+            (if (recipient-clause? first)
+                (make-application
+                 (make-lambda '(test recipient)
+                              (make-application 'recipient (list 'test)))
+                 (list (clause-test first) (sequence->exp (clause-recipient first))))
+                (make-if (cond-predicate first)
+                         (sequence->exp (cond-actions first))
+                         (expand-clauses rest)))))))
 (define (eval-cond exp env) (eval (cond->if exp) env))
+
+;; Exercise 4.5
+
+;; The test-recipient syntax has been integrated in expand-clauses
+
+(define (recipient-clause? clause) (eq? '=> (cadr clause)))
+(define (clause-test clause) (car clause))
+(define (clause-recipient clause) (cddr clause))
+
 (define (install-cond)
   (install-new-exp! 'cond cond? eval-cond))
 (#%provide install-cond)
