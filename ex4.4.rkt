@@ -2,40 +2,6 @@
 
 ;; Exercise 4.4
 
-(#%require "./evaluator.rkt")
-
-(define (and? exp) (tagged-list? exp 'and))
-(define (and-exps exp) (cdr exp))
-(define (eval-and exps env)
-  (cond
-    ((null? exps) 'true)
-    ((last-exp? exps)
-     (let ((r (eval (first-exp exps) env)))
-       (if (true? r)
-           r
-           'false)))
-    (else
-     (let ((r (eval (first-exp exps) env)))
-       (if (true? r)
-           (eval-and (cdr exps) env)
-           'false)))))
-
-(define (or? exp) (tagged-list? exp 'or))
-(define (or-exps exp) (cdr exp))
-(define (eval-or exps env)
-  (cond ((null? exps) 'false)
-        (else
-         (let ((r (eval (first-exp exps) env)))
-           (if (true? r)
-               r
-               (eval-or (cdr exps) env))))))
-
-;; To install and and or as new special forms, add the following
-;; clauses to the cond expression in eval
-
-;; ((and? exp) (eval-and (and-exps exp) env))
-;; ((or? exp) (eval-or (or-exps exp) env))
-
 ;; To implement and and or as derived expressions, we must first
 ;; determine how to define them using other special forms.
 

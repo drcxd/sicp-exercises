@@ -92,5 +92,6 @@
            eval-sequence
            first-exp
            last-exp?
+           rest-exps
            make-application
            install-new-exp!)
