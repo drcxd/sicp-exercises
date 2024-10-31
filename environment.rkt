@@ -1,6 +1,7 @@
 #lang sicp
 
 (#%require "./evaluator-primitive.rkt")
+(#%require "./filter.rkt")
 
 ;; Exercise 4.11
 
@@ -112,8 +113,21 @@
 
 (define the-global-environment (setup-environment))
 
+;; Exercise 4.13
+
+;; Only remove the binding from the first frame, because other code
+;; may still use the binding in the enclosing frame.
+
+;; The following procedure is based on the implementation of
+;; environment in exercise 4.11
+
+(define (remove-from-env! var env)
+  (let ((frame (first-frame env)))
+    (set-car! env (filter (lambda (binding) (not (eq? var (car binding)))) frame))))
+
 (#%provide lookup-variable-value
            extend-environment
            set-variable-value!
            define-variable!
+           remove-from-env!
            the-global-environment)
