@@ -5,7 +5,7 @@
 (#%require "./evaluator-primitive.rkt")
 (#%require "./evaluator-procedure.rkt")
 
-(define apply-in-underlying-scheme apply)
+;; (define apply-in-underlying-scheme apply)
 
 (define exp-table (make-table))
 (define (install-new-exp! keyword predicate procedure)
@@ -27,12 +27,12 @@
         (((table-get exp-table (car exp) 'predicate) exp)
          ((table-get exp-table (car exp) 'eval) exp env))
         ((application? exp)
-         (apply (eval (operator exp) env)
+         (my-apply (eval (operator exp) env)
                 (list-of-values (operands exp) env)))
         (else
          ((error "Unknown expression type: EVAL" exp)))))
 
-(define (apply procedure arguments)
+(define (my-apply procedure arguments)
   (cond ((primitive-procedure? procedure)
          (apply-primitive-procedure procedure arguments))
         ((compound-procedure? procedure)
@@ -47,7 +47,7 @@
           "Unknown procedure type: APPLY" procedure))))
 
 (define (apply-primitive-procedure proc args)
-  (apply-in-underlying-scheme (primitive-implementation proc) args))
+  (apply (primitive-implementation proc) args))
 
 (define (true? x) (not (eq? false x)))
 (define (false? x) (eq? false x))
@@ -86,7 +86,7 @@
   (cons operator operands))
 
 (#%provide eval
-           apply
+           my-apply
            true?
            false?
            eval-sequence

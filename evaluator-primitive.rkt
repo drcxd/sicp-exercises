@@ -13,10 +13,10 @@
         (list 'cons cons)
         (list 'null? null?)))
 
-(define primitive-procedure-names
+(define (primitive-procedure-names)
   (map car primitive-procedures))
 
-(define primitive-procedure-objects
+(define (primitive-procedure-objects)
   (map (lambda (proc) (list 'primitve (cadr proc))) primitive-procedures))
 
 (#%provide primitive-procedure-names

@@ -17,7 +17,7 @@
 (define (frame-variables frame) (map car frame))
 (define (frame-values frame) (map cdr frame))
 (define (add-binding-to-frame! var val frame)
-  (cons (cons var val) frame))
+  (set! frame (cons (cons var val) frame)))
 
 (define (extend-environment vars vals base-env)
   (if (= (length vars) (length vals))
@@ -36,7 +36,7 @@
     (if (eq? env the-empty-environment)
         (error "Unbound variable" var)
         (let ((frame (first-frame env)))
-          (scan frame))))
+          (scan (cdr frame)))))
   (env-loop env))
 
 (define (set-variable-value! var val env)
@@ -49,7 +49,7 @@
     (if (eq? env the-empty-environment)
         (error "Unbound variable: SET!" var)
         (let ((frame (first-frame env)))
-          (scan frame))))
+          (scan (cdr frame)))))
   (env-loop env))
 
 (define (define-variable! var val env)
@@ -58,7 +58,7 @@
       (cond ((null? frame)
              (add-binding-to-frame! var val frame))
             ((eq? var (caar frame)) (set-car! (car frame) val))
-            (else (scan frame))))
+            (else (scan (cdr frame)))))
     (scan frame)))
 
 ;; Exercise 4.12
