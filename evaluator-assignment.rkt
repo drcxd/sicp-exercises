@@ -9,7 +9,7 @@
 (define (assignment-value exp) (caddr exp))
 (define (eval-assignment exp env)
   (set-variable-value! (assignment-variable exp)
-                       (eval (assignment-value exp) env)
+                       (my-eval (assignment-value exp) env)
                        env)
   'ok)
 (define (install-assignment-to-evaluator!)

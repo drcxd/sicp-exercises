@@ -21,14 +21,15 @@
 ;; Other expressions, except of applications, can be dispatched in a
 ;; data-driven way.
 
-(define (eval exp env)
+(define (my-eval exp env)
   (cond ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
-        (((table-get exp-table (car exp) 'predicate) exp)
+        ((and (table-get exp-table (car exp) 'predicate)
+              ((table-get exp-table (car exp) 'predicate) exp))
          ((table-get exp-table (car exp) 'eval) exp env))
         ((application? exp)
-         (my-apply (eval (operator exp) env)
-                (list-of-values (operands exp) env)))
+         (my-apply (my-eval (operator exp) env)
+                   (list-of-values (operands exp) env)))
         (else
          ((error "Unknown expression type: EVAL" exp)))))
 
@@ -55,7 +56,7 @@
 (define (list-of-values exps env)
   (if (no-operands? exps)
       '()
-      (cons (eval (first-operand exps) env)
+      (cons (my-eval (first-operand exps) env)
             (list-of-values (rest-operands exps) env))))
 
 (define (self-evaluating? exp)
@@ -70,9 +71,9 @@
 (define (rest-exps seq) (cdr seq))
 (define (eval-sequence exps env)
   (cond ((last-exp? exps)
-         (eval (first-exp exps) env))
+         (my-eval (first-exp exps) env))
         (else
-         (eval (first-exp exps) env)
+         (my-eval (first-exp exps) env)
          (eval-sequence (rest-exps exps) env))))
 
 (define (application? exp) (pair? exp))
@@ -85,7 +86,7 @@
 (define (make-application operator operands)
   (cons operator operands))
 
-(#%provide eval
+(#%provide my-eval
            my-apply
            true?
            false?

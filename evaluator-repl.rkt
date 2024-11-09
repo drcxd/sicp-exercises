@@ -7,13 +7,14 @@
 (#%require "./evaluator-definition.rkt")
 (#%require "./evaluator-assignment.rkt")
 (#%require "./evaluator-if.rkt")
+(#%require "./evaluator-lambda.rkt")
 
 (define input-prompt ";;; M-Eval input:")
 (define output-prompt ";;; M-Eval output:")
 (define (driver-loop)
   (prompt-for-input input-prompt)
   (let ((input (read)))
-    (let ((output (eval input the-global-environment)))
+    (let ((output (my-eval input the-global-environment)))
       (announce-output output-prompt)
       (user-print output)))
   (driver-loop))
@@ -40,6 +41,7 @@
 (install-definition!)
 (install-assignment-to-evaluator!)
 (install-if!)
+(install-lambda!)
 
 ;; launch the driver loop
 (driver-loop)

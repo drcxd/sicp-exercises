@@ -31,7 +31,7 @@
                 (make-if (cond-predicate first)
                          (sequence->exp (cond-actions first))
                          (expand-clauses rest)))))))
-(define (eval-cond exp env) (eval (cond->if exp) env))
+(define (eval-cond exp env) (my-eval (cond->if exp) env))
 
 ;; Exercise 4.5
 

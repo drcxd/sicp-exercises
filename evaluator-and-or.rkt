@@ -14,12 +14,12 @@
       (cond
         ((null? exps) 'true)
         ((last-exp? exps)
-         (let ((r (eval (first-exp exps) env)))
+         (let ((r (my-eval (first-exp exps) env)))
            (if (true? r)
                r
                'false)))
         (else
-         (let ((r (eval (first-exp exps) env)))
+         (let ((r (my-eval (first-exp exps) env)))
            (if (true? r)
                (iter (rest-exps exps) env)
                'false)))))
@@ -32,7 +32,7 @@
   (define (iter exps env)
     (cond ((null? exps) 'false)
           (else
-           (let ((r (eval (first-exp exps) env)))
+           (let ((r (my-eval (first-exp exps) env)))
              (if (true? r)
                  r
                  (iter (rest-exps exps) env))))))

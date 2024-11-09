@@ -13,9 +13,9 @@
 (define (make-if predicate consequent alternative)
   (list 'if predicate consequent alternative))
 (define (eval-if exp env)
-  (if (true? (eval (if-predicate exp) env))
-      (eval (if-consequent exp) env)
-      (eval (if-alternative exp) env)))
+  (if (true? (my-eval (if-predicate exp) env))
+      (my-eval (if-consequent exp) env)
+      (my-eval (if-alternative exp) env)))
 (define (install-if!)
   (install-new-exp! 'if if? eval-if))
 (#%provide install-if!

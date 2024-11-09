@@ -40,7 +40,7 @@
                               exps))))))
 
 (define (eval-let exp env)
-  (eval (let->combination (let-decls exp) (let-body exp))) env)
+  (my-eval (let->combination (let-decls exp) (let-body exp))) env)
 
 (define (let-decls exp)
   (if (named-let? exp)
@@ -69,7 +69,7 @@
                     (aux rest body)))))
   (aux (let-decls exp) (let-body exp)))
 (define (eval-let* exp env)
-  (eval (let*->nested-lets exp) env))
+  (my-eval (let*->nested-lets exp) env))
 (define (install-let*)
   (install-let) ;; because let* depends on let
   (install-new-exp! 'let* let*? eval-let*))
