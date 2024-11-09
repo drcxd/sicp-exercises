@@ -4,6 +4,7 @@
 (#%require "./environment.rkt")
 (#%require "./evaluator-procedure.rkt")
 (#%require "./evaluator-quote.rkt")
+(#%require "./evaluator-definition.rkt")
 
 (define input-prompt ";;; M-Eval input:")
 (define output-prompt ";;; M-Eval output:")
@@ -34,3 +35,7 @@
 ;; install packages for evaluator
 
 (install-quote-to-evaluator!)
+(install-definition!)
+
+;; launch the driver loop
+(driver-loop)
