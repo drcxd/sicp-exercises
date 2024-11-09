@@ -6,6 +6,7 @@
 (#%require "./evaluator-quote.rkt")
 (#%require "./evaluator-definition.rkt")
 (#%require "./evaluator-assignment.rkt")
+(#%require "./evaluator-if.rkt")
 
 (define input-prompt ";;; M-Eval input:")
 (define output-prompt ";;; M-Eval output:")
@@ -38,6 +39,7 @@
 (install-quote-to-evaluator!)
 (install-definition!)
 (install-assignment-to-evaluator!)
+(install-if!)
 
 ;; launch the driver loop
 (driver-loop)
