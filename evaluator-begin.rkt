@@ -13,8 +13,8 @@
 (define (eval-begin exp env)
   (eval-sequence (begin-actions exp) env))
 (define (make-begin seq) (cons 'begin seq))
-(define (install-begin)
+(define (install-begin!)
   (install-new-exp! 'begin begin? eval-begin))
 (#%provide make-begin
            sequence->exp
-           install-begin)
+           install-begin!)

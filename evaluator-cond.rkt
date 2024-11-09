@@ -41,6 +41,6 @@
 (define (clause-test clause) (car clause))
 (define (clause-recipient clause) (cddr clause))
 
-(define (install-cond)
+(define (install-cond!)
   (install-new-exp! 'cond cond? eval-cond))
-(#%provide install-cond)
+(#%provide install-cond!)

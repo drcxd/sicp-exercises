@@ -8,6 +8,8 @@
 (#%require "./evaluator-assignment.rkt")
 (#%require "./evaluator-if.rkt")
 (#%require "./evaluator-lambda.rkt")
+(#%require "./evaluator-begin.rkt")
+(#%require "./evaluator-cond.rkt")
 
 (define input-prompt ";;; M-Eval input:")
 (define output-prompt ";;; M-Eval output:")
@@ -42,6 +44,8 @@
 (install-assignment-to-evaluator!)
 (install-if!)
 (install-lambda!)
+(install-begin!)
+(install-cond!)
 
 ;; launch the driver loop
 (driver-loop)
