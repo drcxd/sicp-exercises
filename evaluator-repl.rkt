@@ -3,6 +3,7 @@
 (#%require "./evaluator.rkt")
 (#%require "./environment.rkt")
 (#%require "./evaluator-procedure.rkt")
+(#%require "./evaluator-quote.rkt")
 
 (define input-prompt ";;; M-Eval input:")
 (define output-prompt ";;; M-Eval output:")
@@ -29,3 +30,7 @@
                      (procedure-body object)
                      '<procedure-env>))
       (display object)))
+
+;; install packages for evaluator
+
+(install-quote-to-evaluator!)
