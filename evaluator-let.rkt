@@ -62,7 +62,7 @@
 (define (let*->nested-lets exp)
   (define (aux decls body)
     (if (null? decls)
-        (make-lambda '() body)
+        (make-application (make-lambda '() body) '())
         (let ((first (first-decl decls))
               (rest (rest-decls decls)))
           (make-let (list first)
