@@ -39,8 +39,8 @@
   (let ((exps (or-exps exp)))
     (iter exps env)))
 
-(define (install-and-or)
+(define (install-and-or!)
   (install-new-exp! 'and and? eval-and)
   (install-new-exp! 'or or? eval-or))
 
-(#%provide install-and-or)
+(#%provide install-and-or!)

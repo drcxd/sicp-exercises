@@ -10,6 +10,8 @@
 (#%require "./evaluator-lambda.rkt")
 (#%require "./evaluator-begin.rkt")
 (#%require "./evaluator-cond.rkt")
+(#%require "./evaluator-and-or.rkt")
+(#%require "./evaluator-let.rkt")
 
 (define input-prompt ";;; M-Eval input:")
 (define output-prompt ";;; M-Eval output:")
@@ -46,6 +48,8 @@
 (install-lambda!)
 (install-begin!)
 (install-cond!)
+(install-and-or!)
+(install-let*!) ;; this also installs let
 
 ;; launch the driver loop
 (driver-loop)

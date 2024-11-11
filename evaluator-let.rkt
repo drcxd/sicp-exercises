@@ -7,17 +7,17 @@
 (#%require "./evaluator-lambda.rkt")
 (#%require "./evaluator-definition.rkt")
 
-(define (let? exp) (tagged-list? 'let exp))
+(define (let? exp) (tagged-list? exp 'let))
 (define (let-name exp) (cadr exp))
 (define (named-let? exp)
-  (and (tagged-list? exp 'let)
+  (and (let? exp)
        (symbol? (cadr exp))))
 
 (define (decls->vars-and-exps decls)
     (if (null? decls)
         (cons '() '())
         (let ((var (caar decls))
-              (exp (cadr decls))
+              (exp (cadar decls))
               (rest-vars-and-exps (decls->vars-and-exps (cdr decls))))
           (cons (cons var (car rest-vars-and-exps))
                 (cons exp (cdr rest-vars-and-exps))))))
@@ -40,7 +40,7 @@
                               exps))))))
 
 (define (eval-let exp env)
-  (my-eval (let->combination (let-decls exp) (let-body exp))) env)
+  (my-eval (let->combination exp) env))
 
 (define (let-decls exp)
   (if (named-let? exp)
@@ -53,7 +53,7 @@
       (cdddr exp)
       (cddr exp)))
 (define (make-let decls body) (list 'let decls body))
-(define (install-let)
+(define (install-let!)
   (install-new-exp! 'let let? eval-let))
 
 ;; Exercise 4.7
@@ -70,10 +70,11 @@
   (aux (let-decls exp) (let-body exp)))
 (define (eval-let* exp env)
   (my-eval (let*->nested-lets exp) env))
-(define (install-let*)
-  (install-let) ;; because let* depends on let
+(define (install-let*!)
+  (install-let!) ;; because let* depends on let
   (install-new-exp! 'let* let*? eval-let*))
 
-(#%provide install-let
-           install-let*
+(#%provide install-let!
+           install-let*!
+           let->combination
            make-let)
