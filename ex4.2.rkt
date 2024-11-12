@@ -14,7 +14,7 @@
 ;; Thanks to the abstract syntax used in the evaluator implementation,
 ;; we only need to change the following procedures
 
-(#%require "./evaluator.rkt")
+(#%require "./tagged-list.rkt")
 
 (define (application? exp) (tagged-list? exp 'call))
 (define (operator exp) (cadr exp))
