@@ -1,0 +1,15 @@
+Exercise 4.15
+
+When evaluating (try try) the evaluator has to evaluate (halts? try
+try) first.
+
+If it returns true, then it means (try try) will halt. However, this
+makes the (run-forever) branch gets executed, which means (try try)
+can not halt. Thus, there is a contradiction.
+
+If (halts? try try) returns false, then it means (try try) will never
+return. This makes the 'halted branch gets executed, and thus (try
+try) should return a value and halts. Thus, there is a contracition.
+
+From the contradictions above, we can conclude that such a halts?
+procedure does not exist.
