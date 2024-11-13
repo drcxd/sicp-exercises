@@ -491,7 +491,7 @@
   (if (named-let? exp)
       (cdddr exp)
       (cddr exp)))
-(define (make-let decls body) (list 'let decls body))
+(define (make-let decls body) (cons 'let (cons decls body)))
 (define (install-let!)
   (install-new-exp! 'let let? eval-let))
 
