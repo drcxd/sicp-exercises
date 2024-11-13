@@ -61,7 +61,11 @@
         (error "Unbound variable" var)
         (let ((frame (first-frame env)))
           (scan (cdr frame)))))
-  (env-loop env))
+  ;; Exercise 4.16 a
+  (let ((value (env-loop env)))
+    (if (eq? value '*unassigned*)
+        (error "Unassigned variable" var)
+        value)))
 
 (define (set-variable-value! var val env)
   (define (env-loop env)
@@ -159,7 +163,9 @@
 (define (procedure-body p) (caddr p))
 (define (procedure-environment p) (cadddr p))
 (define (make-procedure parameters body env)
-  (list 'procedure parameters body env))
+  ;; Exercise 4.16 c, scan-out-defines is installed in make-procedure
+  ;; so that it is not executed multiple times.
+  (list 'procedure parameters (scan-out-defines body) env))
 
 ;; -- end procedure
 
@@ -280,6 +286,27 @@
     env)
   'ok)
 
+;; Exercise 4.16 b
+(define (scan-out-defines body)
+  (define (define->decl define-exp)
+    (list (definition-variable define-exp) (definition-value define-exp)))
+  (define (body->decls-and-exps body)
+    (cons (map define->decl (filter definition? body))
+          (filter (lambda (exp)
+                    (not (definition? exp))) body)))
+  (define (decl->set-exp decl)
+    (make-assignment (car decl) (cadr decl)))
+  (define (decl->unassigned-decl decl)
+    (list (car decl) ''*unassigned*))
+  (let ((decls-and-exps (body->decls-and-exps body)))
+    (let ((decls (car decls-and-exps))
+          (exps (cdr decls-and-exps)))
+      (if (null? decls)
+          body
+          (let ((unassigned-decls (map decl->unassigned-decl decls))
+                (set-exps (map decl->set-exp decls)))
+            (list (make-let unassigned-decls (append set-exps exps))))))))
+
 (define (install-definition!)
   (install-new-exp! 'define definition? eval-definition))
 
@@ -290,6 +317,7 @@
 (define (assignment? exp) (tagged-list? exp 'set!))
 (define (assignment-variable exp) (cadr exp))
 (define (assignment-value exp) (caddr exp))
+(define (make-assignment var value) (list 'set! var value))
 (define (eval-assignment exp env)
   (set-variable-value! (assignment-variable exp)
                        (my-eval (assignment-value exp) env)
@@ -453,13 +481,8 @@
        (symbol? (cadr exp))))
 
 (define (decls->vars-and-exps decls)
-    (if (null? decls)
-        (cons '() '())
-        (let ((var (caar decls))
-              (exp (cadar decls))
-              (rest-vars-and-exps (decls->vars-and-exps (cdr decls))))
-          (cons (cons var (car rest-vars-and-exps))
-                (cons exp (cdr rest-vars-and-exps))))))
+  (cons (map (lambda (decl) (car decl)) decls)
+        (map (lambda (decl) (cadr decl)) decls)))
 
 
 (define (let->combination exp)
@@ -513,11 +536,6 @@
   (install-let!) ;; because let* depends on let
   (install-new-exp! 'let* let*? eval-let*))
 
-(#%provide install-let!
-           install-let*!
-           let->combination
-           make-let)
-
 ;; -- end let
 
 ;; -- begin repl
@@ -562,4 +580,4 @@
 (install-let*!) ;; this also installs let
 
 ;; launch the driver loop
-(driver-loop)
+;; (driver-loop)
