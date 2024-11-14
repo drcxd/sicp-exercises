@@ -1,0 +1,44 @@
+Sequential interpretation:
+
+The global environment
+  ^
+  |
+|-------------|
+|E1           |
+|-------------|
+| vars | vals |
+| u    | e1   |
+| v    | e2   |
+|-------------|
+
+Definitions scanned out:
+
+The global environment
+  ^
+  |
+|-------------|
+|E1           |
+|-------------|
+| vars | vals |
+|-------------|
+  ^
+  |
+|----------|
+|E2        |
+|----------|
+| u   | e1 |
+| v   | e2 |
+|----------|
+
+The extra frame is introduced by the let expression, which is actually
+a procedure call, in the transformed program.
+
+Design a way to make the interpreter implement the "simultaneous"
+scope rule for internal definitions without constructing the extra
+frame:
+
+If we do not want to introduce a new frame, then we can not use a
+let/lambda transform any more. Maybe we can first still scan all the
+definition expressions, and transform them to assignment expressions
+then place these assignment expressions at the beginning of the
+function body.
