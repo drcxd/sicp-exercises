@@ -1,0 +1,13 @@
+Exercise 4.19
+
+Based on the implementation in exercise 4.16, I have to side with
+Alyssa.
+
+Implement the behavior described by Eva is difficult, what I can
+devise is to first analyze all the internal definitions and see if
+there are dependencies among these expressions. If there are no
+circular dependencies, then we can evaluate definition expressions in
+a certain order that althogh variables are defined sequencially, the
+result is no different from simultaneous definitions. However, this
+does not work when there are circular dependencies between
+definitions.

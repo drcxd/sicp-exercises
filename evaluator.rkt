@@ -536,6 +536,29 @@
   (install-let!) ;; because let* depends on let
   (install-new-exp! 'let* let*? eval-let*))
 
+;; Exercise 4.20 a
+
+(define (letrec? exp) (tagged-list? exp 'letrec))
+(define (letrec-decls exp) (cadr exp))
+(define (letrec-body exp) (caddr exp))
+(define (letrec->let exp)
+  ;; how to implement this? We can extract all the declarations in
+  ;; letrec and transform them into definitions. Then, we transform
+  ;; the definitions plus the body of letrec using the
+  ;; scan-out-defines routine into a new let expression.
+  (define (decls->definitions decls)
+    (map (lambda (decl)
+           (make-definition (car decl) (cadr decl))) decls))
+  (let ((decls (letrec-decls exp))
+        (body (letrec-body exp)))
+    (let ((defines (decls->definitions decls)))
+      (car (scan-out-defines (append defines body))))))
+(define (eval-letrec exp env)
+  (my-eval (letrec->let exp) env))
+(define (install-letrec!)
+  (install-let!)
+  (install-new-exp! 'letrec letrec? eval-letrec))
+
 ;; -- end let
 
 ;; -- begin repl
@@ -578,6 +601,7 @@
 (install-cond!)
 (install-and-or!)
 (install-let*!) ;; this also installs let
+(install-letrec!)
 
 ;; launch the driver loop
 ;; (driver-loop)

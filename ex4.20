@@ -1,0 +1,13 @@
+Exercise 4.20 b
+
+I would skip drawying the diagram but pointing out the difference
+between letrec and let, because I can not see how the diagram tells
+the difference.
+
+When using letrec, each symbol's definition can reference other
+symbols defined in letrec. While using let, each symbol's definition
+can not reference other symbols defined in letrec.
+
+If we replace letrec with let for the example in text, then the
+definition of even? inside let actually references odd? in its
+enclosing environment, rather than the odd? defined inside let.

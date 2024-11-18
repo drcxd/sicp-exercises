@@ -1,0 +1,8 @@
+Exercise 4.18
+
+The procedure does not work if the internal definitions are scanned
+out as shown in the exercise. This is because e2 depends on the value
+of y, but when e2 is evaluated, y's value is still *unassigned*.
+
+The transformation described in the book does not share this problem,
+so it will work.
