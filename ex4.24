@@ -1,0 +1,18 @@
+My plan is to use the procedure runtime to measure the time spends in
+analyzing and executing.
+
+For example, first we measure the time analyzing (lambda (x) x) as
+follows:
+
+> (define x 0)
+> (define y 0)
+> (begin (set! x (runtime)) (analyze '(lambda (x) x)) (set! y (runtime)))
+> (- y x)
+877
+
+Then we measure the time executing it as follows:
+
+> (define z (analyze '(lambda (x) x)))
+> (begin (set! x (runtime)) (z the-global-environment) (set! y (runtime)))
+> (- y x)
+580
