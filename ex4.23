@@ -1,0 +1,9 @@
+The foundamental difference between the analyze-seqeunce defined in
+the text and that defined by Alyssa is that the version defined in the
+text executes only the code in the sequence when the analyzed result
+is evaluated, while Alyssa's version not only execute those code but
+also the "driver" code of the evaluator. To be specific, extra cdr,
+null?, car will be called during the execution of the analyzed
+sequence if Alyssa's analyze-sequence is used. For the
+analyze-sequence defined in the text, these work has been done at
+analyze-time and the run-time overhead is only function calls.
