@@ -1,0 +1,3 @@
+Evaluating (factorial 5) will never terminate.
+
+The definition will work in a normal-order language.
