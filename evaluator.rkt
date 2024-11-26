@@ -424,6 +424,28 @@
 
 ;; -- end if
 
+;; -- begin unless
+
+;; Exercise 4.26
+
+;; I just can't imagine when you have to use unless as a procedure.
+
+(define (unless? exp) (tagged-list? exp 'unless))
+(define (unless->if exp)
+  (let ((predicate (cadr exp))
+        (usual-value (caddr exp))
+        (exceptional-value (cadddr exp)))
+    (make-if predicate exceptional-value usual-value)))
+(define (eval-unless exp env)
+  (my-eval (unless->if exp) env))
+(define (analyze-unless exp)
+  (analyze (unless->if exp)))
+(define (install-unless!)
+  (install-new-exp! 'unless unless? eval-unless analyze-unless))
+
+
+;; -- end unless
+
 ;; -- begin lambda
 
 (define (lambda? exp) (tagged-list? exp 'lambda))
@@ -728,6 +750,7 @@
 (install-and-or!)
 (install-let*!) ;; this also installs let
 (install-letrec!)
+(install-unless!)
 
 ;; launch the driver loop
 ;; (driver-loop)
