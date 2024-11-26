@@ -165,7 +165,14 @@
 (define (make-procedure parameters body env)
   ;; Exercise 4.16 c, scan-out-defines is installed in make-procedure
   ;; so that it is not executed multiple times.
-  (list 'procedure parameters (scan-out-defines body) env))
+
+  ;; NOTE: after switching to analyzing evaluator, we have to invoke
+  ;; scan-out-defines in analyze-lambda, since its current
+  ;; implementation only works with code that has not been analyzed
+
+  ;; (list 'procedure parameters (scan-out-defines body) env))
+
+  (list 'procedure parameters body env))
 
 ;; -- end procedure
 
@@ -174,9 +181,21 @@
 ;; (define apply-in-underlying-scheme apply)
 
 (define exp-table (make-table))
-(define (install-new-exp! keyword predicate procedure)
+(define (install-new-exp! keyword predicate evaluator analyzer)
   (table-set exp-table predicate keyword 'predicate)
-  (table-set exp-table procedure keyword 'eval))
+  (table-set exp-table evaluator keyword 'eval)
+  (table-set exp-table analyzer keyword 'analyze))
+
+(define (analyze exp)
+  (cond ((self-evaluating? exp) (analyze-self-evaluating exp))
+        ((variable? exp) (analyze-variable exp))
+        ((let ((pred (table-get exp-table (car exp) 'predicate)))
+           (and pred (pred exp))) ((table-get exp-table (car exp) 'analyze) exp))
+        ((application? exp) (analyze-application exp))
+        (else (error "Unknown expression type: ANALYZE" exp))))
+
+(define (my-eval exp env)
+  ((analyze exp) env))
 
 ;; Exercise 4.3
 
@@ -187,17 +206,17 @@
 ;; Other expressions, except of applications, can be dispatched in a
 ;; data-driven way.
 
-(define (my-eval exp env)
-  (cond ((self-evaluating? exp) exp)
-        ((variable? exp) (lookup-variable-value exp env))
-        ((and (table-get exp-table (car exp) 'predicate)
-              ((table-get exp-table (car exp) 'predicate) exp))
-         ((table-get exp-table (car exp) 'eval) exp env))
-        ((application? exp)
-         (my-apply (my-eval (operator exp) env)
-                   (list-of-values (operands exp) env)))
-        (else
-         ((error "Unknown expression type: EVAL" exp)))))
+;; (define (my-eval exp env)
+;;   (cond ((self-evaluating? exp) exp)
+;;         ((variable? exp) (lookup-variable-value exp env))
+;;         ((and (table-get exp-table (car exp) 'predicate)
+;;               ((table-get exp-table (car exp) 'predicate) exp))
+;;          ((table-get exp-table (car exp) 'eval) exp env))
+;;         ((application? exp)
+;;          (my-apply (my-eval (operator exp) env)
+;;                    (list-of-values (operands exp) env)))
+;;         (else
+;;          ((error "Unknown expression type: EVAL" exp)))))
 
 (define (my-apply procedure arguments)
   (cond ((primitive-procedure? procedure)
@@ -229,8 +248,12 @@
   (cond ((number? exp) true)
         ((string? exp) true)
         (else false)))
+(define (analyze-self-evaluating exp)
+  (lambda (env) exp))
 
 (define (variable? exp) (symbol? exp))
+(define (analyze-variable exp)
+  (lambda (env) (lookup-variable-value exp env)))
 
 (define (last-exp? seq) (null? (cdr seq)))
 (define (first-exp seq) (car seq))
@@ -241,6 +264,18 @@
         (else
          (my-eval (first-exp exps) env)
          (eval-sequence (rest-exps exps) env))))
+(define (analyze-sequence exps)
+  (define (sequentially proc1 proc2)
+    (lambda (env) (proc1 env) (proc2 env)))
+  (define (loop first-proc rest-procs)
+    (if (null? rest-procs)
+        first-proc
+        (loop (sequentially first-proc (car rest-procs))
+              (cdr rest-procs))))
+  (let ((procs (map analyze exps)))
+    (if (null? procs)
+        (error "Empty sequence: ANALYZE")
+        (loop (car procs) (cdr procs)))))
 
 (define (application? exp) (pair? exp))
 (define (operator exp) (car exp))
@@ -248,7 +283,24 @@
 (define (no-operands? ops) (null? ops))
 (define (first-operand ops) (car ops))
 (define (rest-operands ops) (cdr ops))
-
+(define (analyze-application exp)
+  (let ((fproc (analyze (operator exp)))
+        (aprocs (map analyze (operands exp))))
+    (lambda (env)
+      (execute-application
+       (fproc env)
+       (map (lambda (aproc) (aproc env)) aprocs)))))
+(define (execute-application proc args)
+  (cond ((primitive-procedure? proc)
+         (apply-primitive-procedure proc args))
+        ((compound-procedure? proc)
+         ((procedure-body proc)
+          (extend-environment
+           (procedure-parameters proc)
+           args
+           (procedure-environment proc))))
+        (else
+         (error "Unknown procedure type: EXECUTE-APPLICATION" proc))))
 (define (make-application operator operands)
   (cons operator operands))
 
@@ -258,8 +310,12 @@
 
 (define (quoted? exp) (tagged-list? exp 'quote))
 (define (text-of-quotation exp env) (cadr exp))
+(define (text-of-quotation-analyze exp) (cadr exp))
+(define (analyze-quoted exp)
+  (let ((qval (text-of-quotation-analyze exp)))
+    (lambda (env) qval)))
 (define (install-quote-to-evaluator!)
-  (install-new-exp! 'quote quoted? text-of-quotation))
+  (install-new-exp! 'quote quoted? text-of-quotation analyze-quoted))
 
 ;; -- end quote
 
@@ -286,6 +342,12 @@
     env)
   'ok)
 
+(define (analyze-definition exp)
+  (let ((var (definition-variable exp))
+        (vproc (analyze (definition-value exp))))
+    (lambda (env)
+      (define-variable! var (vproc env) env))))
+
 ;; Exercise 4.16 b
 (define (scan-out-defines body)
   (define (define->decl define-exp)
@@ -308,7 +370,7 @@
             (list (make-let unassigned-decls (append set-exps exps))))))))
 
 (define (install-definition!)
-  (install-new-exp! 'define definition? eval-definition))
+  (install-new-exp! 'define definition? eval-definition analyze-definition))
 
 ;; -- end definition
 
@@ -323,8 +385,14 @@
                        (my-eval (assignment-value exp) env)
                        env)
   'ok)
+(define (analyze-assignment exp)
+  (let ((var (assignment-variable exp))
+        (vproc (analyze (assignment-value exp))))
+    (lambda (env)
+      (set-variable-value! var (vproc env) env)
+      'ok)))
 (define (install-assignment-to-evaluator!)
-  (install-new-exp! 'set! assignment? eval-assignment))
+  (install-new-exp! 'set! assignment? eval-assignment analyze-assignment))
 
 ;; -- end assignment
 
@@ -343,8 +411,16 @@
   (if (true? (my-eval (if-predicate exp) env))
       (my-eval (if-consequent exp) env)
       (my-eval (if-alternative exp) env)))
+(define (analyze-if exp)
+  (let ((pproc (analyze (if-predicate exp)))
+        (cproc (analyze (if-consequent exp)))
+        (aproc (analyze (if-alternative exp))))
+    (lambda (env)
+      (if (true? (pproc env))
+          (cproc env)
+          (aproc env)))))
 (define (install-if!)
-  (install-new-exp! 'if if? eval-if))
+  (install-new-exp! 'if if? eval-if analyze-if))
 
 ;; -- end if
 
@@ -362,8 +438,18 @@
                   (lambda-body exp)
                   env))
 
+(define (analyze-lambda exp)
+  (let ((vars (lambda-parameters exp))
+        ;; (bproc (analyze-sequence (lambda-body exp))))
+
+        ;; Invoke scan-out-defines here, since this is the only chance
+        ;; that it accesses code that has not been analyzed
+        (bproc (analyze-sequence (scan-out-defines (lambda-body exp)))))
+    (lambda (env)
+      (make-procedure vars bproc env))))
+
 (define (install-lambda!)
-  (install-new-exp! 'lambda lambda? eval-lambda))
+  (install-new-exp! 'lambda lambda? eval-lambda analyze-lambda))
 
 ;; -- end lambda
 
@@ -378,9 +464,13 @@
 (define (begin-actions exp) (cdr exp))
 (define (eval-begin exp env)
   (eval-sequence (begin-actions exp) env))
+(define (analyze-begin exp)
+  (let ((proc (analyze-sequence (begin-actions exp))))
+    (lambda (env)
+      (proc env))))
 (define (make-begin seq) (cons 'begin seq))
 (define (install-begin!)
-  (install-new-exp! 'begin begin? eval-begin))
+  (install-new-exp! 'begin begin? eval-begin analyze-begin))
 
 ;; -- end begin
 
@@ -412,6 +502,8 @@
                          (sequence->exp (cond-actions first))
                          (expand-clauses rest)))))))
 (define (eval-cond exp env) (my-eval (cond->if exp) env))
+(define (analyze-cond exp)
+  (analyze (cond->if exp)))
 
 ;; Exercise 4.5
 
@@ -422,7 +514,7 @@
 (define (clause-recipient clause) (cddr clause))
 
 (define (install-cond!)
-  (install-new-exp! 'cond cond? eval-cond))
+  (install-new-exp! 'cond cond? eval-cond analyze-cond))
 
 ;; -- end cond
 
@@ -450,6 +542,22 @@
                'false)))))
   (let ((exps (and-exps exp)))
     (iter exps env)))
+(define (analyze-and exp)
+  (define (iter procs env)
+    (cond ((null? procs) 'true)
+          ((last-exp? procs)
+           (let ((r ((first-exp procs) env)))
+             (if (true? r)
+                 r
+                 'false)))
+          (else
+           (let ((r ((first-exp procs) env)))
+             (if (true? r)
+                 (iter (rest-exps procs) env)
+                 'false)))))
+  (let ((eprocs (map analyze (and-exps exp))))
+    (lambda (env)
+      (iter eprocs env))))
 
 (define (or? exp) (tagged-list? exp 'or))
 (define (or-exps exp) (cdr exp))
@@ -463,10 +571,21 @@
                  (iter (rest-exps exps) env))))))
   (let ((exps (or-exps exp)))
     (iter exps env)))
+(define (analyze-or exp)
+  (define (iter procs env)
+    (cond ((null? procs) 'false)
+          (else
+           (let ((r ((first-exp procs) env)))
+             (if (true? r)
+                 r
+                 (iter (rest-exps procs) env))))))
+  (let ((eprocs (map analyze (or-exps exp))))
+    (lambda (env)
+      (iter eprocs env))))
 
 (define (install-and-or!)
-  (install-new-exp! 'and and? eval-and)
-  (install-new-exp! 'or or? eval-or))
+  (install-new-exp! 'and and? eval-and analyze-and)
+  (install-new-exp! 'or or? eval-or analyze-or))
 
 ;; -- end and or
 
@@ -503,6 +622,9 @@
 
 (define (eval-let exp env)
   (my-eval (let->combination exp) env))
+;; Exercise 4.22
+(define (analyze-let exp)
+  (analyze (let->combination exp)))
 
 (define (let-decls exp)
   (if (named-let? exp)
@@ -516,7 +638,7 @@
       (cddr exp)))
 (define (make-let decls body) (cons 'let (cons decls body)))
 (define (install-let!)
-  (install-new-exp! 'let let? eval-let))
+  (install-new-exp! 'let let? eval-let analyze-let))
 
 ;; Exercise 4.7
 
@@ -532,9 +654,11 @@
   (aux (let-decls exp) (let-body exp)))
 (define (eval-let* exp env)
   (my-eval (let*->nested-lets exp) env))
+(define (analyze-let* exp)
+  (analyze (let*->nested-lets exp)))
 (define (install-let*!)
   (install-let!) ;; because let* depends on let
-  (install-new-exp! 'let* let*? eval-let*))
+  (install-new-exp! 'let* let*? eval-let* analyze-let*))
 
 ;; Exercise 4.20 a
 
@@ -555,9 +679,11 @@
       (car (scan-out-defines (append defines body))))))
 (define (eval-letrec exp env)
   (my-eval (letrec->let exp) env))
+(define (analyze-letrec exp)
+  (analyze (letrec->let exp)))
 (define (install-letrec!)
   (install-let!)
-  (install-new-exp! 'letrec letrec? eval-letrec))
+  (install-new-exp! 'letrec letrec? eval-letrec analyze-letrec))
 
 ;; -- end let
 
