@@ -1,8 +1,14 @@
 This repository contains my solutions for the exercises of Structure
 and Interpretation of Computer Programs by Abelson.
 
+* How to Find Solution for A Certain Exercise
+
 To find the solution of a certain exercise, search for the number of
-the exercise, for example "Exercise 4.21".
+the exercise, for example "Exercise 4.21". Solution for some certain
+exercises are scattered, thus I feel it is not proper to put the
+number of such exercises at a certain place. For such an exercise,
+search the exercise number in the commit log, I will make sure it
+appears there.
 
 Please note that solutions are scattered among multiple branches,
 since I find it difficult to maintain them all in a single
