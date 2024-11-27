@@ -1,5 +1,4 @@
-(define (add)
-  +)
+(define (add) +)
 
 ((add) 1 2)
 

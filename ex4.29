@@ -1,0 +1,30 @@
+(define (f n l)
+  (map ((lambda (x) (+ n x))) l))
+
+(f (fib 10) '(1 2 3 4 5 6 7 8 9 10))
+
+;; If there is no memorization, then (fib 10) will be computed 10
+;; times, rather than once.
+
+(define count 0)
+(define (id x) (set! count (+ count 1)) x)
+(define (square x) (* x x))
+;; With memorization
+;;; L-Eval input:
+(square (id 10))
+;;; L-Eval value:
+100
+;;; L-Eval input:
+count
+;;; L-Eval value:
+1
+
+;; Without memorization
+;;; L-Eval input:
+(square (id 10))
+;;; L-Eval value:
+100
+;;; L-Eval input:
+count
+;;; L-Eval value:
+2
