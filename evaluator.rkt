@@ -160,6 +160,12 @@
 (define (compound-procedure? p)
   (tagged-list? p 'procedure))
 (define (procedure-parameters p) (cadr p))
+(define (procedure-parameter-names p)
+  (map (lambda (param)
+         (if (pair? param)
+             (car param)
+             param))
+       (cadr p)))
 (define (procedure-body p) (caddr p))
 (define (procedure-environment p) (cadddr p))
 (define (make-procedure parameters body env)
@@ -208,8 +214,10 @@
          (eval-sequence
           (procedure-body procedure)
           (extend-environment
-           (procedure-parameters procedure)
-           (list-of-delayed-args arguments env)
+           ;; (procedure-parameters procedure)
+           ;; (list-of-delayed-args arguments env)
+           (procedure-parameter-names procedure)
+           (list-of-processed-args (procedure-parameters procedure) arguments env)
            (procedure-environment procedure))))
         (else
          (error
@@ -221,6 +229,9 @@
 (define (delay-it exp env)
   (list 'thunk exp env))
 
+(define (delay-it-no-memo exp env)
+  (list 'thunk-no-memo exp env))
+
 (define (force-it obj)
   (cond ((thunk? obj)
          (let ((result (actual-value (thunk-exp obj)
@@ -230,6 +241,8 @@
            (set-cdr! (cdr obj) '())
            result))
         ((evaluated-thunk? obj) (thunk-value obj))
+        ((thunk-no-memo? obj) (actual-value (thunk-exp obj)
+                                            (thunk-env obj)))
         (else obj)))
 
 (define (actual-value exp env)
@@ -247,6 +260,25 @@
       (cons (delay-it (first-operand exps) env)
             (list-of-delayed-args (rest-operands exps) env))))
 
+(define (list-of-processed-args parameters exps env)
+  (define (strict? param) (not (pair? param)))
+  (define (lazy? param) (eq? (cadr param) 'lazy))
+  (define (lazy-memo? param) (eq? (cadr param) 'lazy-memo))
+  (define (process-pair pair)
+    (let ((param (car pair))
+          (exp (cdr pair)))
+      (cond ((strict? param) (actual-value exp env))
+            ((lazy? param) (delay-it-no-memo exp env))
+            ((lazy-memo? param) (delay-it exp env))
+            (else (error "Unknown parameter type: LIST-OF-PROCESSED-ARGS" param)))))
+  (define (iter pairs env)
+    (if (no-operands? pairs)
+        '()
+        (cons (process-pair (car pairs))
+              (iter (cdr pairs) env))))
+  (let ((param-arg-pairs (map cons parameters exps)))
+    (iter param-arg-pairs env)))
+
 (define (thunk? obj)
   (tagged-list? obj 'thunk))
 
@@ -258,6 +290,9 @@
 
 (define (evaluated-thunk? obj)
   (tagged-list? obj 'evaluated-thunk))
+
+(define (thunk-no-memo? obj)
+  (tagged-list? obj 'thunk-no-memo))
 
 (define (thunk-value evaluated-thunk)
   (cadr evaluated-thunk))
