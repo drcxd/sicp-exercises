@@ -199,12 +199,11 @@
 
 ;; Exercise 4.3
 
-;; For self evaluating expressions and variables, we still need to
-;; dispatch them explicitly, because these expressions do not carry
-;; any data can be used as identifiers.
+;; For self evaluating expressions, variables and applications, we
+;; still need to dispatch them explicitly, because these expressions
+;; do not carry any data can be used as identifiers.
 
-;; Other expressions, except of applications, can be dispatched in a
-;; data-driven way.
+;; Other expressions, can be dispatched in a data-driven way.
 
 ;; (define (my-eval exp env)
 ;;   (cond ((self-evaluating? exp) exp)
