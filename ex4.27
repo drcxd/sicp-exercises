@@ -1,0 +1,25 @@
+(define count 0)
+(define (id x) (set! count (+ 1 count)) x)
+
+(define w (id (id 10)))
+;;; L-Eval input:
+count
+;;; L-Eval value:
+1
+;;; L-Eval input:
+w
+;;; L-Eval value:
+10
+;;; L-Eval input:
+count
+;;; L-Eval value:
+2
+
+The first response is 1 because when w is defined, the outer most id
+is applied, thus count is increased by 1.
+
+The second response is 10 beacuse when w is output, its value, which
+is a thunk, is forced, which yields 10.
+
+The last response is 2 beacuse when w is forced, the inner id is
+applied, which increase count by 1.
