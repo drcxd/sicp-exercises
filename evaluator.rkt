@@ -215,22 +215,22 @@
          (error
           "Unknown procedure type: APPLY" procedure))))
 
+(define (apply-primitive-procedure proc args)
+  (apply (primitive-implementation proc) args))
+
 (define (delay-it exp env)
   (list 'thunk exp env))
 
-(define (thunk? obj)
-  (tagged-list? obj 'thunk))
-
-(define (thunk-exp thunk)
-  (cadr thunk))
-
-(define (thunk-env thunk)
-  (caddr thunk))
-
 (define (force-it obj)
-  (if (thunk? obj)
-      (actual-value (thunk-exp obj) (thunk-env obj))
-      obj))
+  (cond ((thunk? obj)
+         (let ((result (actual-value (thunk-exp obj)
+                                     (thunk-env obj))))
+           (set-car! obj 'evaluated-thunk)
+           (set-car! (cdr obj) result)
+           (set-cdr! (cdr obj) '())
+           result))
+        ((evaluated-thunk? obj) (thunk-value obj))
+        (else obj)))
 
 (define (actual-value exp env)
   (force-it (my-eval exp env)))
@@ -247,8 +247,20 @@
       (cons (delay-it (first-operand exps) env)
             (list-of-delayed-args (rest-operands exps) env))))
 
-(define (apply-primitive-procedure proc args)
-  (apply (primitive-implementation proc) args))
+(define (thunk? obj)
+  (tagged-list? obj 'thunk))
+
+(define (thunk-exp thunk)
+  (cadr thunk))
+
+(define (thunk-env thunk)
+  (caddr thunk))
+
+(define (evaluated-thunk? obj)
+  (tagged-list? obj 'evaluated-thunk))
+
+(define (thunk-value evaluated-thunk)
+  (cadr evaluated-thunk))
 
 (define (true? x) (not (eq? false x)))
 (define (false? x) (eq? false x))
