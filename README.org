@@ -1,2 +1,16 @@
 This repository contains my solutions for the exercises of Structure
 and Interpretation of Computer Programs by Abelson.
+
+To find the solution of a certain exercise, search for the number of
+the exercise, for example "Exercise 4.21".
+
+Please note that solutions are scattered among multiple branches,
+since I find it difficult to maintain them all in a single
+branch. This is because some of the exercises are based on different
+foundations, for example, some are based on analyzing evaluator while
+the others are based on normal order evaluator.
+
+I will try to put the most of the solutions in the main/master branch,
+and name the other branches so it should be obvious what it is
+about. Anyway, if you fail to find certain solution in one branch, try
+search the others.
