@@ -1,0 +1,24 @@
+a
+
+Ben was right about the behavior of for-each since the first
+expression in the begin sequence in definition of for-each is (proc
+(car items)). Usually, the argument of proc should be
+delayed. However, in this case, it is a primitive operation:
+car. Thus, even the normal order evaluator does not delay its
+evaluation. In the definition of the lambda that gets called by
+for-each, the first expression does not take any argument, so no delay
+happens here.
+
+b
+
+With the original eval-sequence, (p1 1) yields (1 2), (p2 1) yields 1.
+
+With Cy's eval-sequence, (p1 1) and (p2 1) both yield 1.
+
+c
+
+The answer of part a can be used to answer this part as well.
+
+d
+
+For now I prefer Cy's approach than the approach in the text.
