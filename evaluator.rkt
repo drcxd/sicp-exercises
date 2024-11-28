@@ -308,8 +308,18 @@
 
 ;; -- begin quote
 
+;; Exercise 4.33
+(define (pair->lazy-pair pair env)
+  (if (pair? pair)
+      (let ((first (pair->lazy-pair (car pair) env))
+            (second (pair->lazy-pair (cdr pair) env)))
+        (make-procedure
+         '(m)
+         '((m p q))
+         (extend-environment '(p q) (list first second) env)))
+      pair))
 (define (quoted? exp) (tagged-list? exp 'quote))
-(define (text-of-quotation exp env) (cadr exp))
+(define (text-of-quotation exp env) (pair->lazy-pair (cadr exp) env))
 (define (install-quote-to-evaluator!)
   (install-new-exp! 'quote quoted? text-of-quotation))
 
