@@ -164,14 +164,27 @@
 ;; -- begin procedure
 
 (define (compound-procedure? p)
-  (tagged-list? p 'procedure))
+  (or (lazy-pair? p)
+      (tagged-list? p 'procedure)))
 (define (procedure-parameters p) (cadr p))
 (define (procedure-body p) (caddr p))
 (define (procedure-environment p) (cadddr p))
 (define (make-procedure parameters body env)
+  (make-procedure-object 'procedure parameters body env))
+(define (make-procedure-object type parameters body env)
   ;; Exercise 4.16 c, scan-out-defines is installed in make-procedure
   ;; so that it is not executed multiple times.
-  (list 'procedure parameters (scan-out-defines body) env))
+  (list type parameters (scan-out-defines body) env))
+(define (lazy-pair? o) (tagged-list? o 'lazy-pair))
+(define (make-lazy-pair car-value cdr-value env)
+  (make-procedure-object 'lazy-pair
+                         '(m)
+                         '((m p q))
+                         (extend-environment '(p q) (list car-value cdr-value) env)))
+(define (lazy-pair-environment pair) (procedure-environment pair))
+(define (lazy-pair-car pair)
+  (let ((env (lazy-pair-environment pair)))
+    (actual-value (lookup-variable-value 'p env) env)))
 
 ;; -- end procedure
 
@@ -311,12 +324,9 @@
 ;; Exercise 4.33
 (define (pair->lazy-pair pair env)
   (if (pair? pair)
-      (let ((first (pair->lazy-pair (car pair) env))
-            (second (pair->lazy-pair (cdr pair) env)))
-        (make-procedure
-         '(m)
-         '((m p q))
-         (extend-environment '(p q) (list first second) env)))
+      (let ((car-value (pair->lazy-pair (car pair) env))
+            (cdr-value (pair->lazy-pair (cdr pair) env)))
+        (make-lazy-pair car-value cdr-value env))
       pair))
 (define (quoted? exp) (tagged-list? exp 'quote))
 (define (text-of-quotation exp env) (pair->lazy-pair (cadr exp) env))
@@ -644,12 +654,13 @@
   (display string)
   (newline))
 (define (user-print object)
-  (if (compound-procedure? object)
-      (display (list 'compound-procedure
+  (cond ((lazy-pair? object) (display (list 'lazy-pair (lazy-pair-car object) '...)))
+        ((compound-procedure? object)
+         (display (list 'compound-procedure
                      (procedure-parameters object)
                      (procedure-body object)
-                     '<procedure-env>))
-      (display object)))
+                     '<procedure-env>)))
+        (else (display object))))
 ;; -- end repl
 
 ;; install packages for evaluator
