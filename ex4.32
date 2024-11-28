@@ -1,0 +1,21 @@
+Exercise 4.32
+
+(define (f x)
+  (display x)
+  x)
+
+(cons-stream (f 1) (f 2))
+
+This will cause the evaluator print 1.
+
+(cons (f 1) (f 2))
+
+With the lazy lists, the evaluator will not print anything.
+
+We can use this extra laziness to write the following code:
+
+(define x (cons x x))
+
+Though I do not see how this is useful in real application.
+
+Sad.
