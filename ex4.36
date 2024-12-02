@@ -1,0 +1,21 @@
+Exercise 4.36
+
+Replace an-integer-between by an-integer-starting-from gives the
+following definition
+
+(define (a-pythagorean-triple)
+  (let ((i (an-integer-starting-from 1)))
+    (let ((j (an-integer-starting-from i)))
+      (let ((k (an-integer-starting-from j)))
+        (require (= (+ (* i i) (* j j)) (* k k)))
+        (list i j k)))))
+
+With the chronological backtracking, this function only iterate
+through k, leaving i and j unchanged
+
+(define (a-pythagorean-triple)
+  (let ((k (an-integer-starting-from 1)))
+    (let ((i (an-integer-between 1 k)))
+      (let ((j (an-integer-between i k)))
+        (require (= (+ (* i i) (* j j)) (* k k)))
+        (list i j k)))))
