@@ -1,0 +1,51 @@
+Exercise 4.38
+
+Remove the following code from multiple-dwelling
+
+(require (not (= (abs (- fletcher cooper)) 1)))
+
+There are 8 solutions, the 7 solutions other than the original one are
+listed as follows (in the order from floor 5 to floor 1):
+
+
+1. smith
+   miller
+   fletcher
+   cooper
+   baker
+
+2. miller
+   baker
+   fletcher
+   cooper
+   smith
+
+3. miller
+   smith
+   cooper
+   fletcher
+   baker
+
+4. smith
+   miller
+   cooper
+   fletcher
+   baker
+
+5. miller
+   fletcher
+   cooper
+   baker
+   smith
+
+6. miller
+   fletcher
+   cooper
+   smith
+   baker
+
+7. miller
+   cooper
+   fletcher
+   baker
+   smith
