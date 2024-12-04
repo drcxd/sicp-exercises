@@ -1,0 +1,7 @@
+Exercise 4.39
+
+The order or the restrictions does not affect the answer. However, it
+does affect the time to find the answer. We should delay checking the
+distinction of each elements, since it takes longer time comparing
+with checking other constraints. Sometimes, it is simply unnecessary
+to check this constraint, because other constraint may not be met.
