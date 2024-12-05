@@ -1,0 +1,77 @@
+Exercise 4.43
+
+This problem is more complicated than previous ones, because of its
+last constraint "Gabrielle's father owns the yacht that is named after
+Dr.Parker's daughter."
+
+Our program to solve this problem:
+
+(define daughter-names '(Gabrielle Lorna Mary Melissa Rosalind))
+(define (get-father daughter) (car daughter))
+(define (get-name daughter) (cadr daughter))
+(define (get-daughter father) (car father))
+(define (get-yacht father (cadr father)))
+
+(define Barnacle (list (amb daughter-names) (amb daughter-names)))
+(require (not (= (get-daughter Barnacle) (get-yacht Barnacle))))
+(require (= (get-yacht Barnacle) 'Gabrielle))
+(require (= (get-daughter Barnacle) 'Melissa))
+
+(define Downing (list (amb daughter-names) (amb daughter-names)))
+(require (not (= (get-daughter Downing) (get-yacht Downing))))
+(require (= (get-yacht Downing) 'Melissa))
+
+(define Hall (list (amb daughter-names) (amb daughter-names)))
+(require (not (= (get-daughter Hall) (get-yacht Hall))))
+(require (= (get-yacht Hall) 'Rosalind))
+
+(define Moore (list (amb daughter-names) (amb daughter-names)))
+(require (not (= (get-daughter Moore) (get-yacht Moore))))
+(require (= (get-daughter Moore) 'Mary))
+(require (= (get-yacht Moore) 'Lorna))
+
+(define Parker (list (amb daughter-names) (amb daughter-names)))
+(require (not (= (get-daughter Parker) (get-yacht Parker))))
+
+(define fathers (list Barnacle Downing Hall Moore Parker))
+
+(define Gabrielle (list (amb fathers) 'Gabrielle))
+(require (= (get-daughter (get-father Gabrielle)) 'Gabrielle))
+
+(define Lorna (list (amb fathers) 'Lorna))
+(require (= (get-daughter (get-father Lorna)) 'Lorna))
+
+(define Mary (list (amb fathers) 'Mary))
+(require (= (get-daughter (get-father Mary)) 'Mary))
+
+(define Melissa (list (amb fathers) 'Melissa))
+(require (= (get-daughter (get-father Melissa)) 'Melissa))
+
+(define Rosalind (list (amb fathers) 'Rosalind))
+(require (= (get-daughter (get-father Rosalind)) 'Rosalind))
+
+(require (= (get-yacht (get-father Gabrielle)) (get-daughter Barnacle)))
+
+(require (distinct? (map get-father daughters)))
+(require (distinct? (map get-daughter fathers)))
+(require (distinct? (map get-yacht fathers)))
+
+(get-father Lorna)
+
+TODO verify the correctness of the program.
+
+If we do not know that Mary Ann's last name is Moore, then there are
+two possible answers:
+
+1. Lorna's father is Downing, this is the same as the answer when we
+know that Mary Ann's last anme is Moore.
+
+| Father   | Barnacle  | Downing | Hall      | Moore | Parker   |
+| Daughter | Melissa   | Lorna   | Gabrielle | Mary  | Rosalind |
+| yacht    | Gabrielle | Melissa | Rosalind  | Lorna | Mary     |
+
+2. Lorna's father is Parker.
+
+| Father   | Barnacle  | Downing  | Hall     | Moore     | Parker |
+| Daughter | Melissa   | Rosalind | Mary     | Gabrielle | Lorna  |
+| yacht    | Gabrielle | Melissa  | Rosalind | Lorna     | Mary   |
