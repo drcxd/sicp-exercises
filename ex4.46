@@ -1,0 +1,6 @@
+Exercise 4.46
+
+It is because parse-word reads the sentence from left to right through
+*unparsed*. If the argument of amb is not evaluated from left to
+right, then the result may of the parser may change the order of the
+original sentence
