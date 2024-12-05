@@ -1,0 +1,35 @@
+Exercise 4.45
+
+I am going to partition the sentence into 5 parts:
+
+1. The professor
+2. lectures
+3. to the student
+4. in the class
+5. with the cat
+
+The first part is always parsed as a noun phrase. The different
+parsing of the sentence depends on how to combine the other 4 parts.
+
+I am going to use a simplified notation to represent the different
+parsings:
+
+1. (((1 2) 3) 4) This means:
+   a. the professor in the class
+   b. the professor with the cat
+
+2. ((1 (2 3)) 4) This means:
+   a. the student in the class
+   b. the professor with the cat
+
+3. (1 ((2 3) 4)) This means:
+   a. the student in the class
+   b. the student with the cat
+
+4. (1 (2 (3 4))) This means (ridiculous but grammarly possible):
+   a. the class with the cat
+   b. the student in the class
+
+5. ((1 2) (3 4)) This mens (also ridiculous but grammarly possible):
+   a. the class with the cat
+   b. the professor in the class
