@@ -1,0 +1,25 @@
+Exercise 4.47
+
+Reasoner's code does not work. Comparing with the original one,
+Reasoner's implementation causes multiple branches. For example,
+parse-verb-phrase is called, thus amb is called, which first evaluates
+parse-word. Let's call this instance of invoking amb instance1. If
+somehow the program backtracks to instance1, then parse-word is
+reverted, and another call to parse-verb-phrase is evaluated. This
+leads to another call to amb, which first evaluates parse-word. Let's
+call this instance of invoking amb instance2. Assume this succeeds,
+then the second call to parse-verb-phrase returns. Then
+parse-prepositional-phrase from instance1 is evaluated. Now, if
+somehow the program backtracks to instance2, it will revert the call
+to parse-word, and evaluates the alternative, which starts a third
+call to parse-verb-phrase. However, the call to
+parse-prepositional-phrase from instance1 is not evaluated. From now
+on, the state of the program is wrong.
+
+I do not understand the second part of the problem:
+
+"Does the program's behavior change if we interchange the order of
+expressions in the amb?"
+
+Of course the behvaior will change and parse-verb-phrase will never
+return.
