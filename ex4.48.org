@@ -1,0 +1,63 @@
+#+title: Exercise 4.48
+
+I am going to extend noun phrases to include adjectives.
+
+#+begin_src scheme
+  (define (parse-simple-noun-phrase)
+    (amb (list 'simple-noun-phrase
+               (parse-word articles)
+               (parse-word adjectives)
+               (parse-word nouns))
+         (list 'simple-noun-phrase
+               (parse-word articles)
+               (parse-word nouns))))
+#+end_src
+
+This solution looks really simple: on the first branch of ~amb~, we try
+to parse a simple noun phrase which contains an adjective, if this
+fails, then we fall back to the original simple noun phrase.
+
+This implementation does not share the defect of Louis Reasoner's
+implementation of ~parse-verb-phrase~, because there is no recursive
+call which introduces new branches.
+
+However, I wonder are there any more elegant solutions. This one
+should work, but it looks ugly and may not be extendable. The purpose
+of reading SICP is to write code that is easy to maintain and
+extend. The code presented by the author usually meets this
+requirement, since I always feel easy to add some modifications to
+it. However, is my modified code share the same nature? I doubt it.
+
+After thing about this problem for a while, I found that my
+implementation, although correct in some way, is really limited. It
+can only parse phrases such as "a tall tree", but not "a tall straight
+tree".
+
+So, let me extend it so that it can parse an article followed by
+arbitrary adjectives followed by a noun.
+
+First let's define the adjective noun phrase. An adjective noun phrase
+is a noun, or an adjective followed by a adjective noun phrase. This
+is exactly the reverse of how a verb phrase defined.
+
+#+begin_src scheme
+  (define (parse-adjective-noun-phrase)
+    (define (maybe-extend)
+      (parse-word adjectives)
+      (parse-adjective-noun-phrase))
+    (list 'adjective-noun-phrase
+          (amb (maybe-extend)
+               (parse-word nouns))))
+#+end_src
+
+Then we modify the ~parse-simple-noun~ to use
+~parse-adjective-noun-phrase~:
+
+#+begin_src scheme
+  (define (parse-simple-noun-phrase)
+    (list 'simple-noun-phrase
+          (parse-word articles)
+          (parse-adjective-noun-phrase)))
+#+end_src
+
+I am more satisfied with this solution. For now.
