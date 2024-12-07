@@ -1,0 +1,110 @@
+#+title: Exercise 4.49
+
+First, we simply made ~parse-word~ always succeed:
+
+#+begin_src scheme
+  (define (parse-word word-list)
+    (cadr word-list))
+#+end_src
+
+This results in ~parse-sentence~ always generating the same sentence
+
+#+begin_example
+(sentence (simple-noun-phrase the student) studies)
+#+end_example
+
+To make the result more variable, we have to introduce randomness into
+~parse-word~. First, we pick a work randomly from ~word-list~.
+
+#+begin_src scheme
+  (define (parse-word word-list)
+    (let ((len (length word-list)))
+      (let ((idx (+ 1 (random (- len 1)))))
+        (list-ref word-list idx))))
+#+end_src
+
+Now ~parse-sentence~ can generate some more variations such as:
+
+#+begin_example
+(sentence (simple-noun-phrase a class) lectures)
+#+end_example
+
+The next step is to add prepositional phrase into the generated
+sentences. How do we do it? We can modify ~parse-sentence~ to manually
+include a prepositional phrase.
+
+#+begin_src scheme
+  (define (parse-sentence)
+    (list 'sentence
+          (parse-noun-phrase)
+          (parse-prepositional-phrase)
+          (parse-verb-phrase)
+          (parse-prepositional-phrase)))
+#+end_src
+
+This ~parse-sentence~ can generate something like the following:
+
+#+begin_example
+(sentence
+ (simple-noun-phrase a student)
+ (prep-phrase to (simple-noun-phrase the class))
+ sleeps
+ (prep-phrase by (simple-noun-phrase a student)))
+#+end_example
+
+Though the generated sentence is correct in grammar, its structure is
+incorrectly formed.
+
+The original parsing program makes sure the parser covers the whole
+sentence by requiring ~*unparsed*~ to be null. We can simulate the
+effect by randomly failing at the ~parse-word~:
+
+#+begin_src scheme
+  (define threshold 1)
+
+  (define (parse-word word-list)
+    (let ((succeed (random 10)))
+      (if (< succeed threshold)
+          (require false)
+          (let ((len (length word-list)))
+            (let ((idx (+ 1 (random (- len 1)))))
+              (list-ref word-list idx))))))
+#+end_src
+
+I can not test this code since ~require~ is not implemented
+yet. However, it is expected that this may cause the sentence
+generation fail, since some not ~amb~-ed ~parse-word~ would fail and
+terminate the whole generation process.
+
+Another possible solution is to ~(require false)~ random times at the
+end of ~parse-noun-phrase~:
+
+#+begin_src scheme
+  (define (parse-noun-phrase)
+    (define (maybe-extend noun-phrase)
+      (set! *noun-counter* (- *noun-counter* 1))
+      (amb noun-phrase
+           (maybe-extend
+            (list 'noun-phrase
+                  noun-phrase
+                  (parse-prepositional-phrase)))))
+    (maybe-extend (parse-simple-noun-phrase))
+    (require (= 0 *noun-counter*)))
+#+end_src
+
+At the beginning of ~parse-sentence~ we set ~*nount-counter*~ to some
+random value:
+
+#+begin_src scheme
+  (define (parse-sentence)
+    (set! *noun-counter* (+ 1 (random 3)))
+    (list 'sentence
+          (parse-noun-phrase)
+          (parse-verb-phrase)))
+#+end_src
+
+This way, our noun will be extended by some random number of
+prepositional phrases. The same technique can be used to generate
+additional prepositional phrases for the verb phrase as well. However,
+since I do not know the implementation of ~require~, I can not test this
+solution for now.
