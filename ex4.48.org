@@ -36,18 +36,16 @@ tree".
 So, let me extend it so that it can parse an article followed by
 arbitrary adjectives followed by a noun.
 
-First let's define the adjective noun phrase. An adjective noun phrase
-is a noun, or an adjective followed by a adjective noun phrase. This
-is exactly the reverse of how a verb phrase defined.
+First let's define the adjective phrase. An adjective phrase consists
+of an adjective and a noun, or an adjective and another adjective
+phrase.
 
 #+begin_src scheme
-  (define (parse-adjective-noun-phrase)
-    (define (maybe-extend)
-      (parse-word adjectives)
-      (parse-adjective-noun-phrase))
-    (list 'adjective-noun-phrase
-          (amb (maybe-extend)
-               (parse-word nouns))))
+  (define (parse-adjective-phrase)
+    (define (maybe-extend adj-phrase)
+      (list 'adj-phrase adj-phrase (amb (parse-word nouns)
+                                        (parse-adjective-phrase))))
+    (maybe-extend (parse-word adjectives)))
 #+end_src
 
 Then we modify the ~parse-simple-noun~ to use
@@ -57,7 +55,8 @@ Then we modify the ~parse-simple-noun~ to use
   (define (parse-simple-noun-phrase)
     (list 'simple-noun-phrase
           (parse-word articles)
-          (parse-adjective-noun-phrase)))
+          (am (parse-adjective-phrase)
+              (parse-word nouns))))
 #+end_src
 
 I am more satisfied with this solution. For now.

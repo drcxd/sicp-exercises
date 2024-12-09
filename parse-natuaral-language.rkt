@@ -6,6 +6,7 @@
 (define verbs '(verb studies lectures eats sleeps))
 (define articles '(article the a))
 (define prepositions '(prep for to in by with))
+(define adjectives '(adjective tall short heavy light red green young old))
 
 (define (parse-prepositional-phrase)
   (list 'prep-phrase
@@ -26,10 +27,19 @@
                 (parse-prepositional-phrase)))))
   (maybe-extend (parse-word verbs)))
 
+;; Exercise 4.48
+
+(define (parse-adjective-phrase)
+  (define (maybe-extend adj-phrase)
+    (list 'adj-phrase adj-phrase (amb (parse-word nouns)
+                                      (parse-adjective-phrase))))
+  (maybe-extend (parse-word adjectives)))
+
 (define (parse-simple-noun-phrase)
   (list 'simple-noun-phrase
         (parse-word articles)
-        (parse-word nouns)))
+        (amb (parse-adjective-phrase)
+             (parse-word nouns))))
 
 (define (parse-noun-phrase)
   (define (maybe-extend noun-phrase)
@@ -52,3 +62,5 @@
   (set! *unparsed* input)
   (let ((sent (parse-sentence)))
     (require (null? *unparsed*)) sent))
+
+(parse '(the tall young student with the cat sleeps in the class))
