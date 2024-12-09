@@ -1,10 +1,16 @@
-Exercise 4.40
+#lang sicp
 
-Before the distinct requirement, there are 5^5 = 3125 floor
-assignments, since there are 5 different people and each can be
-assigned to one of the five floors.
+;; Exercise 4.40
 
-After the distinct requirement, there are 5! = 120 floor assignemtns.
+;; Before the distinct requirement, there are 5^5 = 3125 floor
+;; assignments, since there are 5 different people and each can be
+;; assigned to one of the five floors.
+
+;; After the distinct requirement, there are 5! = 120 floor
+;; assignments.
+
+(#%require "./require.rkt")
+(#%require "./distinct.rkt")
 
 (define (multiple-dwelling)
   (let ((baker (amb 1 2 3 4 5)))

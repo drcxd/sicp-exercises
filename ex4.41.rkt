@@ -1,11 +1,7 @@
 #lang sicp
 
 ;; Exercise 4.41
-(define (distinct? items)
-  (cond ((null? items) true)
-        ((null? (cdr items)) true)
-        ((member (car items) (cdr items)) false)
-        (else (distinct? (cdr items)))))
+(#%require "./distinct.rkt")
 
 (define floors '(1 2 3 4 5))
 (define (multiple-dwelling)
