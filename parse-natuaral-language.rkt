@@ -7,12 +7,17 @@
 (define articles '(article the a))
 (define prepositions '(prep for to in by with))
 
+;; Exercise 4.49
+
+(define *noun-counter* nil)
+
 (define (parse-prepositional-phrase)
   (list 'prep-phrase
         (parse-word prepositions)
         (parse-noun-phrase)))
 
 (define (parse-sentence)
+  (set! *noun-counter* (+ 1 (random 5)))
   (list 'sentence
         (parse-noun-phrase)
         (parse-verb-phrase)))
@@ -33,22 +38,25 @@
 
 (define (parse-noun-phrase)
   (define (maybe-extend noun-phrase)
+    (set! *noun-counter* (- *noun-counter* 1))
     (amb noun-phrase
          (maybe-extend
           (list 'noun-phrase
                 noun-phrase
                 (parse-prepositional-phrase)))))
-  (maybe-extend (parse-simple-noun-phrase)))
+  (let ((result (maybe-extend (parse-simple-noun-phrase))))
+    (require (<= *noun-counter* 0))
+    result))
 
 (define (parse-word word-list)
-  (require (not (null? *unparsed*)))
-  (require (memq (car *unparsed*) (cdr word-list)))
-  (let ((found-word (car *unparsed*)))
-    (set! *unparsed* (cdr *unparsed*))
-    (list (car word-list) found-word)))
+  (let ((len (length word-list)))
+    (let ((idx (+ 1 (random (- len 1)))))
+      (list-ref word-list idx))))
 
 (define *unparsed* '())
 (define (parse input)
   (set! *unparsed* input)
   (let ((sent (parse-sentence)))
     (require (null? *unparsed*)) sent))
+
+(parse-sentence)
