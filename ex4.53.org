@@ -1,0 +1,32 @@
+#+title: Exercise 4.53
+
+The result of evaluating
+
+#+begin_src scheme
+  (let ((pairs '()))
+    (if-fail
+     (let ((p (prime-sum-pair '(1 3 5 8)
+                              '(20 35 110))))
+       (permanent-set! pairs (cons p pairs))
+       (amb))
+     pairs))
+#+end_src
+
+is the empty list ~'()~.
+
+The definition of ~prime-sum-pair~ for reference:
+
+#+begin_src scheme
+  (define (prime-sum-pair list1 list2)
+    (let ((a (an-element-of list1))
+          (b (an-element-of list2)))
+      (require (prime? (+ a b)))
+      (list a b)))
+#+end_src
+
+This is because the sum of the first element of both lists, 21, is not
+a prime number. Thus, the ~require~ expression in ~prime-sum-pair~ causes
+the failure of the ~let~ expression. This in turn causes the ~if-fail~
+expression to evaluate its second argument, which is still the empty
+list.
+
