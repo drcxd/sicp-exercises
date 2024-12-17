@@ -3,6 +3,7 @@
 (#%require "./table.rkt")
 (#%require "./filter.rkt")
 (#%require "./tagged-list.rkt")
+(#%require "./randomize-list.rkt")
 
 ;; -- begin primitive
 
@@ -348,9 +349,24 @@
              succeed
              (lambda () (try-next (cdr choices))))))
       (try-next cprocs))))
-(install-new-exp! 'amb amb? nil analyze-amb)
+(define (install-amb!)
+  (install-new-exp! 'amb amb? nil analyze-amb))
 
 ;; -- end evaluator core
+
+;; -- begin ramb
+
+;; Exercise 4.50
+
+(define (ramb? exp) (tagged-list? exp 'ramb))
+(define (ramb-choices exp) (cdr exp))
+(define (ramb->amb exp)
+  (cons 'amb (randomize-list (ramb-choices exp))))
+(define (analyze-ramb exp)
+  (analyze-amb (ramb->amb exp)))
+(define (install-ramb!)
+  (install-amb!) ;; dependency
+  (install-new-exp! 'ramb ramb? nil analyze-ramb))
 
 ;; -- begin quote
 
@@ -826,6 +842,7 @@
 (install-let*!) ;; this also installs let
 (install-letrec!)
 (install-unless!)
+(install-ramb!) ;; this also installs amb
 
 ;; launch the driver loop
 (driver-loop)

@@ -1,0 +1,7 @@
+#+title: Exercise 4.50
+
+~ramb~ makes Alyssa's scheme generate random sentences of variable
+lengths. For example, with ~ramb~, ~parse-verb-phrase~ may return a verb
+with a preposition. Using the original ~amb~, it would always returns a
+simple verb.
+
