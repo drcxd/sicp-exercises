@@ -1,0 +1,6 @@
+#+title: Exercise 4.51
+
+If we have used ~set!~, the results are going to be =(a b 1)= and =(a c
+1)=. This is because the ~set!~ expression is between the last ~amb~
+expression and the ~require~ expression. Each time the evaluator
+backtracks, the assignment is canceled.

@@ -17,6 +17,9 @@
         (list 'cdr cdr)
         (list 'cons cons)
         (list 'null? null?)
+        (list 'not not)
+        (list 'eq? eq?)
+        (list 'list list)
         (list '+ +)
         (list '- -)
         (list '* *)
@@ -468,6 +471,27 @@
 
 ;; -- end assignment
 
+;; -- begin permanent assignment
+
+;; Exercise 4.51
+
+(define (permanent-assignment? exp) (tagged-list? exp 'permanent-set!))
+(define (permanent-assignment-variable exp) (cadr exp))
+(define (permanent-assignment-value exp) (caddr exp))
+(define (analyze-permanent-assignment exp)
+  (let ((var (permanent-assignment-variable exp))
+        (vproc (analyze (permanent-assignment-value exp))))
+    (lambda (env succeed fail)
+      (vproc env
+             (lambda (val fail2)
+               (set-variable-value! var val env)
+               (succeed 'ok fail2))
+             fail))))
+(define (install-permanent-assignment!)
+  (install-new-exp! 'permanent-set! permanent-assignment? nil analyze-permanent-assignment))
+
+;; -- end permanent assignment
+
 ;; -- begin if
 
 (define (if? exp) (tagged-list? exp 'if))
@@ -843,6 +867,7 @@
 (install-letrec!)
 (install-unless!)
 (install-ramb!) ;; this also installs amb
+(install-permanent-assignment!)
 
 ;; launch the driver loop
 (driver-loop)
