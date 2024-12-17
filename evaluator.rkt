@@ -833,6 +833,26 @@
 
 ;; -- end if-fail
 
+;; -- begin require
+
+;; Exercise 4.54
+
+(define (require? exp) (tagged-list? exp 'require))
+(define (require-predicate exp) (cadr exp))
+(define (analyze-require exp)
+  (let ((pproc (analyze (require-predicate exp))))
+    (lambda (env succeed fail)
+      (pproc env
+             (lambda (pred-value fail2)
+               (if (not (true? pred-value))
+                   (fail2)
+                   (succeed 'ok fail2)))
+             fail))))
+(define (install-require!)
+  (install-new-exp! 'require require? nil analyze-require))
+
+;; -- end require
+
 ;; -- begin repl
 
 (define input-prompt ";;; Amb-Eval input:")
@@ -894,6 +914,7 @@
 (install-ramb!) ;; this also installs amb
 (install-permanent-assignment!)
 (install-if-fail!)
+(install-require!)
 
 ;; launch the driver loop
 (driver-loop)
