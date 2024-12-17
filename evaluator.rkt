@@ -20,6 +20,7 @@
         (list 'not not)
         (list 'eq? eq?)
         (list 'list list)
+        (list 'even? even?)
         (list '+ +)
         (list '- -)
         (list '* *)
@@ -808,6 +809,30 @@
 
 ;; -- end let
 
+;; -- begin if-fail
+
+;; Exercise 4.52
+
+(define (if-fail? exp) (tagged-list? exp 'if-fail))
+(define (if-fail-succeed exp) (cadr exp))
+(define (if-fail-fail exp) (caddr exp))
+(define (analyze-if-fail exp)
+  (lambda (env succeed fail)
+    (let ((first (analyze (if-fail-succeed exp)))
+          (second (analyze (if-fail-fail exp))))
+      (first env
+             (lambda (value fail2)
+               (succeed value fail2))
+             (lambda ()
+               (second env
+                       (lambda (value fail3)
+                         (succeed value fail3))
+                       fail))))))
+(define (install-if-fail!)
+  (install-new-exp! 'if-fail if-fail? nil analyze-if-fail))
+
+;; -- end if-fail
+
 ;; -- begin repl
 
 (define input-prompt ";;; Amb-Eval input:")
@@ -868,6 +893,7 @@
 (install-unless!)
 (install-ramb!) ;; this also installs amb
 (install-permanent-assignment!)
+(install-if-fail!)
 
 ;; launch the driver loop
 (driver-loop)
