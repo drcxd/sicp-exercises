@@ -1,0 +1,19 @@
+#+title: Exercise 4.55
+
+all people supervised by Ben Bitdiddle
+
+#+begin_example
+  (supervisor ?x (Bitdiddle Ben))
+#+end_example
+
+the names and jobs of all people in the accounting division
+
+#+begin_example
+  (job ?x (accounting . ?y))
+#+end_example
+
+the names and addresses of all people who live in Slumerville
+
+#+begin_example
+  (address ?x (Slumerville . ?y))
+#+end_example
