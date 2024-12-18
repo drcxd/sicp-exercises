@@ -1,0 +1,27 @@
+#+title: Exercise 4.56
+
+a. the names of all people who are supervised by Ben Bitdiddle,
+together with their addresses;
+
+#+begin_example
+  (and (supervisor ?x (Bitdiddle Ben))
+       (addresses ?x ?y))
+#+end_example
+
+b. all people whose salary is less than Ben Bitdiddle's, together with
+their salary and Ben Bitdiddle's salary;
+
+#+begin_example
+  (and (salary ?person ?amount)
+       (salary (Bitdiddle Ben) ?amount2)
+       (list-value < amount amount2))
+#+end_example
+
+c. all people who is supervised by someone who is not in the computer
+division, together with the supervisor's name and job.
+
+#+begin_example
+  (and (supervisor ?person ?sup)
+       (not (job ?sup (computer . ?x)))
+       (job ?sup ?y))
+#+end_example
