@@ -1,0 +1,26 @@
+#+title: Exercise 4.57
+
+#+begin_src scheme
+  (rule (can-replace ?person1 ?person2)
+        (and (not (same ?person1 ?person2))
+             (and (job ?person1 ?job1)
+                  (job ?person2 ?job2)
+                  (or (same ?job1 ?job2)
+                      (can-do-job ?job1 ?job2)))))
+#+end_src
+
+All people who can replace Cy D. Fect:
+
+#+begin_src scheme
+  (can-replace ?person1 (Fect Cy D))
+#+end_src
+
+All people who can replace someone who is being paid more than they
+are, together with the two salaries.
+
+#+begin_src scheme
+  (and (salary ?person1 ?salary1)
+       (salary ?person2 ?salary2)
+       (list-value < ?salary1 ?salary2)
+       (can-replace ?person1 ?person2))
+#+end_src

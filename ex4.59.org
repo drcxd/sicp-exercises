@@ -1,0 +1,22 @@
+#+title: Exercise 4.59
+
+a. Query all meetings on Friday:
+
+#+begin_src scheme
+  (meeting ?dpt (Friday ?time))
+#+end_src
+
+b. Alyssa's rule:
+
+#+begin_src scheme
+  (rule (meeting-time? ?person ?day-and-time)
+        (and (job ?person (?dpt . ?x))
+             (or (meeting ?dpt ?day-and-time)
+                 (meeting whole-company ?day-and-time))))
+#+end_src
+
+c. Alyssa's query:
+
+#+begin_src scheme
+  (meeting-time? (Hacker Allysa P) (Wednesday ?time))
+#+end_src

@@ -1,0 +1,9 @@
+#+title: Exercise 4.58
+
+#+begin_src scheme
+  (rule (bigshot ?person)
+        (and (supervisor ?person ?sup)
+             (job ?person (?dpt1 . ?x))
+             (job ?sup (?dpt2 . ?y))
+             (not (same ?dpt1 ?dpt2))))
+#+end_src
