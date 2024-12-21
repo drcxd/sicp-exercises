@@ -1,0 +1,12 @@
+#+title: Exercise 4.62
+
+#+begin_src scheme
+  (rule (last-pair (?x) (?x)))
+  (rule (last-pair (?y . ?x) (?x))
+        (last-pair (?x) (?x)))
+#+end_src
+
+# TODO: verify the solution
+
+Since ~(last-pair ?x (3))~ can have infinite solutions, I have no idea
+what will be its result.

@@ -1,0 +1,13 @@
+#+title: Exercise 4.63
+
+#+begin_src scheme
+  (rule (grandson x? z?)
+        (and (son x? y?)
+             (son y? z?)))
+
+  (rule (son x? z?)
+        (and (wife x? y?)
+             (son y? z?)))
+#+end_src
+
+# TODO: verification
