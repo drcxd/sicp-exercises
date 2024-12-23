@@ -1,0 +1,29 @@
+#+title: Exercise 4.64
+
+The original rule:
+
+#+begin_src scheme
+  (rule (outranked-by ?staff-person ?boss)
+        (or (supervisor ?staff-person ?boss)
+            (and (supervisor ?staff-person ?middle-manager)
+                 (outranked-by ?middle-manager ?boss)))) ;; (1)
+#+end_src
+
+Louis' rule:
+
+#+begin_src scheme
+  (rule (outranked-by ?staff-person ?boss)
+        (or (supervisor ?staff-person ?boss)
+            (and (outranked-by ?middle-manager ?boss) ;; (2)
+                 (supervisor ?staff-person ?middle-manager))))
+#+end_src
+
+I have no idea why the text said "After answering, the system goes
+into an infinite loop." According to my analysis, the system goes into
+an infinite loop without answering the question.
+
+In Louis' rule, evaluating an ~outranked-by~ expression directly invokes
+another ~outranked-by~ expression, which leads to infinite recursive
+call. This is not the case in the original rule, since at some time,
+the ~supervisor~ expression will evaluate to false and suspend the
+evaluation of the following ~outranked-by~ expression.
