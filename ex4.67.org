@@ -1,0 +1,7 @@
+#+title: Exercise 4.67
+
+I am not sure about this exercise.
+
+Maybe when we start evaluating an expression, we can search the
+existing frame, and see if it has the same query and binding with the
+current expression. If so, then there is a loop?
