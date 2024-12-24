@@ -1,0 +1,26 @@
+#+title: Exercise 4.65
+
+The ~wheel~ rule:
+
+#+begin_src scheme
+  (rule (wheel ?person)
+        (and (supervisor ?middle-manager ?person)
+             (supervisor ?x ?middle-manager)))
+#+end_src
+
+Because there are four different instance that satisfies the body of
+the rule:
+
+#+begin_src scheme
+  (and (supervisor (Bitdiddle Ben) (Warbucks Oliver))
+       (supervisor (Hacker Alyssa P) (Bitdiddle Ben)))
+
+  (and (supervisor (Bitdiddle Ben) (Warbucks Oliver))
+       (supervisor (Fect Cy D) (Bitdiddle Ben)))
+
+  (and (supervisor (Bitdiddle Ben) (Warbucks Oliver))
+       (supervisor (Tweakit Lem E) (Bitdiddle Ben)))
+
+  (and (supervisor (Scrooge Eben) (Warbucks Oliver))
+       (supervisor (Cratchet Robert) (Scrooge Eben)))
+#+end_src
