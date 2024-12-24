@@ -1,0 +1,19 @@
+#+title: Exercise 4.66
+
+For example, in Ben's new system, if the following expression is
+evaluated:
+
+#+begin_src scheme
+  (sum ?amount (and (wheel ?who)
+                    (salary ?who ?amount)))
+#+end_src
+
+according to exercise 4.65, Oliver Warbucks' salary would be
+accumulated four times.
+
+To solve this problem, the result of the query must be filtered. For
+each frame, we can check its bindings for the variables that appear in
+the query pattern. We save such bindings stored in a list, and before
+any new bindings are added to such a list, we make sure there are no
+existing bindings have the same value. Finally, the accumulation
+procedure runs on the filtered bindings.
