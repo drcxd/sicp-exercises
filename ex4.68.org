@@ -1,0 +1,15 @@
+#+title: Exercise 4.68
+
+First an empty list's reverse is also an empty list:
+
+#+begin_src scheme
+  (rule (reverse () ()))
+#+end_src
+
+Then a list's reverse is its ~car~ appended to the reverse of its ~cdr~:
+
+#+begin_src scheme
+  (rule (reverse ?x (?y . ?z))
+        (and (reverse ?z ?u)
+             (append-to-form ?u ?y ?x)))
+#+end_src
