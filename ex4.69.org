@@ -1,0 +1,18 @@
+#+title: Exercise 4.69
+
+Write rules that determine if a list ends in the word =grandson=.
+
+#+begin_src scheme
+  (rule (end-with-grandson (grandson)))
+  (rule (end-with-grandson (?x . ?y))
+        (end-with-grandson ?y))
+#+end_src
+
+#+begin_src scheme
+  (rule ((great . ?rel) ?x ?y)
+        (and (ends-with-grandson ?rel)
+             (son ?x ?z)
+             (?rel ?z ?y)))
+#+end_src
+
+# TODO: verification
