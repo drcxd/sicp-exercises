@@ -1,0 +1,51 @@
+#+title: Exercise 4.70
+
+#+begin_src scheme
+  (define (add-assertion! assertion)
+    (store-assertion-in-index assertion)
+    (let ((old-assertions THE-ASSERTIONS))
+      (set! THE-ASSERTIONS
+            (cons-stream assertion old-assertions))
+      'ok))
+#+end_src
+
+#+begin_src scheme
+  (define (add-assertion! assertion)
+    (store-assertion-in-index assertion)
+    (set! THE-ASSERTIONS
+          (cons-stream assertion THE-ASSERTIONS))
+    'ok)
+#+end_src
+
+#+begin_src scheme
+  (define ones (cons-stream 1 ones))
+#+end_src
+
+#+begin_example
+  repl.rkt> (set! ones (cons-stream 'x ones))
+  repl.rkt> (stream-car ones)
+  x
+  repl.rkt> (stream-car (stream-cdr ones))
+  x
+#+end_example
+
+#+begin_example
+  repl.rkt> (let ((old-stream ones)) (set! ones (cons-stream 'x old-stream)))
+  repl.rkt> (stream-car ones)
+  x
+  repl.rkt> (stream-car (stream-cdr ones))
+  1
+#+end_example
+
+By the two examples above, we can see that ~(set! ones (cons-stream 'x
+ones))~ does not produce the intended stream. This is because the
+second argument of ~cons-stream~ is not evaluated when evaluating
+~set!~. Thus, when it is evaluated by the ~stream-cdr~, it evaluates to
+the current value of ~ones~, which is the stream whose first element is
+~'x~.
+
+The ~let~ in ~add-assertion!~ solves this issue by using another symbol to
+reference what was referenced by ~THE-ASSERSIONS~ when evaluating
+~set!~. Thus, when evaluating ~stream-cdr~ on ~THE-ASSERIONS~, this avoids
+resolving the symbol ~THE-ASSERTIONS~, but a local symbol
+~old-assertions~.
