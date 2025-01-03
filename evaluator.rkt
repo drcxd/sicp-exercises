@@ -3,6 +3,7 @@
 (#%require "./table.rkt")
 (#%require "./filter.rkt")
 (#%require "./tagged-list.rkt")
+(#%require "./prompt-for-input.rkt")
 
 ;; -- begin primitive
 
@@ -723,11 +724,6 @@
       (announce-output output-prompt)
       (user-print output)))
   (driver-loop))
-(define (prompt-for-input string)
-  (newline)
-  (newline)
-  (display string)
-  (newline))
 (define (announce-output string)
   (newline)
   (display string)

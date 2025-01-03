@@ -6,10 +6,16 @@
            stream-ref
            stream-for-each
            stream-filter
+           stream-append
+           display-stream
            display-stream-n
            add-streams
            scale-stream
-           map-successive-pairs)
+           map-successive-pairs
+           stream-append-delayed
+           interleave-delayed
+           stream-flatmap
+           singleton-stream)
 
 (define (stream-car s) (car s))
 (define (stream-cdr s) (force (cdr s)))
@@ -64,3 +70,40 @@
   (cons-stream
    (f (stream-car s) (stream-car (stream-cdr s)))
    (map-successive-pairs f (stream-cdr (stream-cdr s)))))
+
+(define (stream-append-delayed s1 delayed-s2)
+  (if (stream-null? s1)
+      (force delayed-s2)
+      (cons-stream
+       (stream-car s1)
+       (stream-append-delayed
+        (stream-cdr s1)
+        delayed-s2))))
+
+(define (interleave-delayed s1 delayed-s2)
+  (if (stream-null? s1)
+      (force delayed-s2)
+      (cons-stream
+       (stream-car s1)
+       (interleave-delayed
+        (force delayed-s2)
+        (delay (stream-cdr s1))))))
+
+(define (stream-flatmap proc s)
+  (flatten-stream (stream-map proc s)))
+
+(define (flatten-stream stream)
+  (if (stream-null? stream)
+      the-empty-stream
+      (interleave-delayed
+       (stream-car stream)
+       (delay (flatten-stream (stream-cdr stream))))))
+
+(define (singleton-stream x)
+  (cons-stream x the-empty-stream))
+
+(define (stream-append s1 s2)
+  (if (stream-null? s1)
+      s2
+      (cons-stream (stream-car s1)
+                   (stream-append (stream-cdr s1) s2))))
