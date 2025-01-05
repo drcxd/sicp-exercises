@@ -9,10 +9,32 @@ Write rules that determine if a list ends in the word =grandson=.
 #+end_src
 
 #+begin_src scheme
+  (rule (has-relationship (?rel) ?x ?y)
+        (?rel ?x ?y))
   (rule ((great . ?rel) ?x ?y)
         (and (ends-with-grandson ?rel)
              (son ?x ?z)
-             (?rel ?z ?y)))
+             (or (?rel ?z ?y)
+                 (has-relationship ?rel ?z ?y))))
 #+end_src
 
 # TODO: verification
+
+Code to test the solution:
+
+#+begin_src scheme
+  (process-multiple-input '((assert! (rule (end-with-grandson (grandson))))
+                            (assert! (rule (end-with-grandson (?x . ?y))
+                                           (end-with-grandson ?y)))
+                            (assert! (rule (has-relationship (?rel) ?x ?y)
+                                           (?rel ?x ?y)))
+                            (assert! (rule ((great . ?rel) ?x ?y)
+                                           (and (end-with-grandson ?rel)
+                                                (son ?x ?z)
+                                                (or (?rel ?z ?y)
+                                                    (has-relationship ?rel ?z ?y)))))
+                            (assert! (rule ((great . ?rel) ?x ?y)
+                                           (?rel ?x ?y)))))
+#+end_src
+
+The code from exercise 4.63 is also required.
