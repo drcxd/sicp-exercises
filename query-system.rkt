@@ -16,17 +16,16 @@
 
 ;; The driver loop
 
-(define (query-driver-loop)
-  (prompt-for-input input-prompt)
-  (let ((q (query-syntax-process (read))))
+(define (process-single-input input)
+  (let ((q (query-syntax-process input)))
     (cond ((assertion-to-be-added? q)
            (add-rule-or-assertion! (add-assertion-body q))
            (newline)
-           (display "Assertion added to data base.")
-           (query-driver-loop))
+           (display "Assertion added to data base."))
           (else
            (newline)
            (display output-prompt)
+           (newline)
            (display-stream
             (stream-map
              (lambda (frame)
@@ -35,8 +34,12 @@
                    frame
                  (lambda (v f)
                    (contract-question-mark v))))
-             (qeval q (singleton-stream '()))))
-           (query-driver-loop)))))
+             (qeval q (singleton-stream '()))))))))
+
+(define (query-driver-loop)
+  (prompt-for-input input-prompt)
+  (process-single-input (read))
+  (query-driver-loop))
 
 (define (instantiate exp frame unbound-var-handler)
   (define (copy exp)
