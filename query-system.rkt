@@ -14,14 +14,18 @@
 (define input-prompt ";;; Query input:")
 (define output-prompt ";;; Query results:")
 
-;; The driver loop
+;; Convenient functions to avoid manually input assertions to the
+;; query system every time
+
+(define (process-multiple-input input)
+  (map process-single-input input)
+  'done)
 
 (define (process-single-input input)
   (let ((q (query-syntax-process input)))
     (cond ((assertion-to-be-added? q)
            (add-rule-or-assertion! (add-assertion-body q))
-           (newline)
-           (display "Assertion added to data base."))
+           (display "Assertion added to data base.\n"))
           (else
            (newline)
            (display output-prompt)
@@ -35,6 +39,8 @@
                  (lambda (v f)
                    (contract-question-mark v))))
              (qeval q (singleton-stream '()))))))))
+
+;; The driver loop
 
 (define (query-driver-loop)
   (prompt-for-input input-prompt)
