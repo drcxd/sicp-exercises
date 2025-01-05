@@ -1,13 +1,32 @@
 #+title: Exercise 4.63
 
 #+begin_src scheme
-  (rule (grandson x? z?)
-        (and (son x? y?)
-             (son y? z?)))
+  (rule (grandson ?x ?z)
+        (and (son ?x ?y)
+             (son ?y ?z)))
 
-  (rule (son x? z?)
-        (and (wife x? y?)
-             (son y? z?)))
+  (rule (son ?x ?z)
+        (and (wife ?x ?y)
+             (son ?y ?z)))
 #+end_src
 
-# TODO: verification
+Code to test the rules:
+
+#+begin_src scheme
+  (process-multiple-input '((assert! (son Adam Cain))
+                            (assert! (son Cain Enoch))
+                            (assert! (son Enoch Irad))
+                            (assert! (son Irad Mehujael))
+                            (assert! (son Mehujael Methushael))
+                            (assert! (son Methushael Lamech))
+                            (assert! (wife Lamech Ada))
+                            (assert! (son Ada Jabal))
+                            (assert! (son Ada Jubal))))
+
+  (process-multiple-input '((assert! (rule (grandson ?x ?z)
+                                           (and (son ?x ?y)
+                                                (son ?y ?z))))
+                            (assert! (rule (son ?x ?z)
+                                           (and (wife ?x ?y)
+                                                (son ?y ?z))))))
+#+end_src
