@@ -1,12 +1,23 @@
 #+title: Exercise 4.62
 
 #+begin_src scheme
-  (rule (last-pair (?x) (?x)))
-  (rule (last-pair (?y . ?x) (?x))
-        (last-pair (?x) (?x)))
+  (rule (last-pair (?x . ()) (?x)))
+  (rule (last-pair (?x . ?y) ?z)
+        (last-pair ?y ?z))
 #+end_src
 
-# TODO: verify the solution
+Code to test the solution:
 
-Since ~(last-pair ?x (3))~ can have infinite solutions, I have no idea
-what will be its result.
+#+begin_src scheme
+  (process-single-input '(assert! (rule (last-pair (?x . ()) (?x)))))
+  (process-single-input '(assert! (rule (last-pair (?x . ?y) ?z)
+                                        (last-pair ?y ?z))))
+#+end_src
+
+Theoretically, queries such as ~(last-pair ?x (3))~ yield infinite
+results. The implementation of the query system given in the text will
+try to generate the infinite matches when evaluating ~qeval~.
+
+Evaluating ~(last-pair ?x (3))~ makes the program loops forever, thus I
+suppose my rules work correctly on such queries, though I can not see
+any results being printed out.
