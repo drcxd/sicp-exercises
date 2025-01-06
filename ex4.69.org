@@ -31,10 +31,7 @@ Code to test the solution:
                             (assert! (rule ((great . ?rel) ?x ?y)
                                            (and (end-with-grandson ?rel)
                                                 (son ?x ?z)
-                                                (or (?rel ?z ?y)
-                                                    (has-relationship ?rel ?z ?y)))))
-                            (assert! (rule ((great . ?rel) ?x ?y)
-                                           (?rel ?x ?y)))))
+                                                (has-relationship ?rel ?z ?y))))))
 #+end_src
 
 The code from exercise 4.63 is also required.
