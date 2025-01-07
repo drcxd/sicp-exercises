@@ -1,15 +1,38 @@
 #+title: Exercise 4.68
 
-First an empty list's reverse is also an empty list:
-
 #+begin_src scheme
   (rule (reverse () ()))
+  ;; This can only solve patterns like (reverse (1 2 3) ?x)
+  (rule (reverse ?x (?y . ?z))
+        (and (append-to-form ?u (?y) ?x)
+             (reverse ?u ?z)))
+  ;; This can only solve patterns like (reverse ?x (1 2 3))
+  (rule (reverse (?x . ?y) ?z)
+        (and (append-to-form ?u (?x) ?z)
+             (reverse ?y ?u)))
 #+end_src
 
-Then a list's reverse is its ~car~ appended to the reverse of its ~cdr~:
+We need two different version of ~reverse~ because we must make sure
+that the last argument to ~append-to-form~ is bound to a fixed value,
+rather than a free variable. This guarantees that ~append-to-form~ will
+return finite results and the deduction can keep going.
+
+Code to test the solution:
 
 #+begin_src scheme
-  (rule (reverse ?x (?y . ?z))
-        (and (reverse ?z ?u)
-             (append-to-form ?u ?y ?x)))
+  (process-multiple-input
+   '((assert! (rule (append-to-form () ?y ?y)))
+     (assert! (rule (append-to-form (?u . ?v) ?y (?u . ?z))
+                    (append-to-form ?v ?y ?z)))
+     (assert! (rule (reverse () ())))
+     (assert! (rule (reverse ?x (?y . ?z))
+                    (and (append-to-form ?u (?y) ?x)
+                         (reverse ?u ?z))))
+     (assert! (rule (reverse (?x . ?y) ?z)
+                    (and (append-to-form ?u (?x) ?z)
+                         (reverse ?y ?u))))))
 #+end_src
+
+Note that this solution only works in the query system with a loop
+detector, and it would omit duplicated results, for reasons that I do
+not know yet.
