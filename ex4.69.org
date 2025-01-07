@@ -1,24 +1,20 @@
 #+title: Exercise 4.69
 
-Write rules that determine if a list ends in the word =grandson=.
-
 #+begin_src scheme
   (rule (end-with-grandson (grandson)))
   (rule (end-with-grandson (?x . ?y))
         (end-with-grandson ?y))
-#+end_src
-
-#+begin_src scheme
   (rule (has-relationship (?rel) ?x ?y)
         (?rel ?x ?y))
   (rule ((great . ?rel) ?x ?y)
-        (and (ends-with-grandson ?rel)
+        (and (end-with-grandson ?rel)
              (son ?x ?z)
              (or (?rel ?z ?y)
                  (has-relationship ?rel ?z ?y))))
 #+end_src
 
-# TODO: verification
+~has-relationship~ is used to extract ~grandson~ from the list, when ~?rel~
+is unified as ~(grandson)~.
 
 Code to test the solution:
 
@@ -31,7 +27,11 @@ Code to test the solution:
                             (assert! (rule ((great . ?rel) ?x ?y)
                                            (and (end-with-grandson ?rel)
                                                 (son ?x ?z)
-                                                (has-relationship ?rel ?z ?y))))))
+                                                (or (?rel ?z ?y)
+                                                    (has-relationship ?rel ?z ?y)))))))
 #+end_src
 
 The code from exercise 4.63 is also required.
+
+Also, to correctly evaluate ~(?rel Adam Irad)~, the query system has to
+implement the loop detector described in exercise 4.67.
