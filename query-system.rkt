@@ -38,7 +38,7 @@
                    frame
                  (lambda (v f)
                    (contract-question-mark v))))
-             (qeval q (singleton-stream '()))))))))
+             (qeval q (singleton-stream '()) the-empty-history)))))))
 
 ;; The driver loop
 
@@ -61,47 +61,49 @@
 
 ;; The evaluator
 
-(define (qeval query frame-stream)
+(define (qeval query frame-stream history)
   (let ((qproc (get (type query) 'qeval)))
     (if qproc
-        (qproc (contents query) frame-stream)
-        (simple-query query frame-stream))))
+        (qproc (contents query) frame-stream history)
+        (simple-query query frame-stream history))))
 
-(define (simple-query query-pattern frame-stream)
+(define (simple-query query-pattern frame-stream history)
   (stream-flatmap
    (lambda (frame)
      (stream-append-delayed
       (find-assertions query-pattern frame)
-      (delay (apply-rules query-pattern frame))))
+      (delay (apply-rules query-pattern frame history))))
    frame-stream))
 
-(define (conjoin conjuncts frame-stream)
+(define (conjoin conjuncts frame-stream history)
   (if (empty-conjunction? conjuncts)
       frame-stream
       (conjoin (rest-conjuncts conjuncts)
-               (qeval (first-conjunct conjuncts) frame-stream))))
+               (qeval (first-conjunct conjuncts) frame-stream history)
+               history)))
 (put conjoin 'and 'qeval)
 
-(define (disjoin disjuncts frame-stream)
+(define (disjoin disjuncts frame-stream history)
   (if (empty-disjunction? disjuncts)
       the-empty-stream
       (interleave-delayed
-       (qeval (first-disjunct disjuncts) frame-stream)
-       (delay (disjoin (rest-disjuncts disjuncts) frame-stream)))))
+       (qeval (first-disjunct disjuncts) frame-stream history)
+       (delay (disjoin (rest-disjuncts disjuncts) frame-stream history)))))
 (put disjoin 'or 'qeval)
 
-(define (negate operands frame-stream)
+(define (negate operands frame-stream history)
   (stream-flatmap
    (lambda (frame)
      (if (stream-null?
           (qeval (negated-query operands)
-                 (singleton-stream frame)))
+                 (singleton-stream frame)
+                 history))
          (singleton-stream frame)
          the-empty-stream))
    frame-stream))
 (put negate 'not 'qeval)
 
-(define (lisp-value call frame-stream)
+(define (lisp-value call frame-stream history)
   (stream-flatmap
    (lambda (frame)
      (if (execute
@@ -119,7 +121,7 @@
   (apply (eval (predicate exp) user-initial-environment)
          (args exp)))
 
-(define (always-true ignore frame-stream) frame-stream)
+(define (always-true ignore frame-stream history) frame-stream)
 (put always-true 'always-true 'qeval)
 
 ;; Finding assertions by pattern matching
@@ -155,20 +157,23 @@
 
 ;; Rules and unification
 
-(define (apply-rules pattern frame)
+(define (apply-rules pattern frame history)
   (stream-flatmap (lambda (rule)
-                    (apply-a-rule rule pattern frame))
+                    (apply-a-rule rule pattern frame history))
                   (fetch-rules pattern frame)))
 
-(define (apply-a-rule rule query-pattern query-frame)
+(define (apply-a-rule rule query-pattern query-frame history)
   (let ((clean-rule (rename-variables-in rule)))
     (let ((unify-result (unify-match query-pattern
                                      (conclusion clean-rule)
                                      query-frame)))
-      (if (eq? unify-result 'failed)
-          the-empty-stream
-          (qeval (rule-body clean-rule)
-                 (singleton-stream unify-result))))))
+      (let ((history-record (make-history-record clean-rule rule unify-result)))
+        (if (or (eq? unify-result 'failed)
+                (has-loop? history-record history))
+            the-empty-stream
+            (qeval (rule-body clean-rule)
+                   (singleton-stream unify-result)
+                   (cons history-record history)))))))
 
 (define (rename-variables-in rule)
   (let ((rule-application-id (new-rule-application-id)))
@@ -379,3 +384,53 @@
 ;; Environment
 
 (define user-initial-environment (interaction-environment))
+
+;; Loop detector
+
+(define the-empty-history '())
+
+(define (make-history-record clean-rule rule frame)
+  (list clean-rule rule frame))
+(define (history-record-clean-rule record)
+  (car record))
+(define (history-record-rule record)
+  (cadr record))
+(define (history-record-frame record)
+  (caddr record))
+
+(define (has-same-bindings? clean-rule1 frame1 clean-rule2 frame2)
+  (define (tree-walk exp1 exp2)
+    (cond ((var? exp1)
+           (let ((binding1 (binding-in-frame exp1 frame1))
+                 (binding2 (binding-in-frame exp2 frame2)))
+             (cond ((and (and binding1 binding2)
+                         (eq? (binding-value binding1)
+                              (binding-value binding2))) true)
+                   ((and (not binding1) (not binding2)) true)
+                   (else false))))
+          ((pair? exp1)
+           (and (tree-walk (car exp1) (car exp2))
+                (tree-walk (cdr exp1) (cdr exp2))))
+          (else true)))
+  (tree-walk clean-rule1 clean-rule2))
+
+(define (duplicated-record? record1 record2)
+  (let ((rule1 (history-record-rule record1))
+        (rule2 (history-record-rule record2))
+        (clean-rule1 (history-record-clean-rule record1))
+        (clean-rule2 (history-record-clean-rule record2))
+        (frame1 (history-record-frame record1))
+        (frame2 (history-record-frame record2)))
+    (and
+     (eq? rule1 rule2)
+     (has-same-bindings? clean-rule1 frame1 clean-rule2 frame2))))
+
+(define (has-loop? record history)
+  (define (iter record history)
+    (if (null? history)
+        false
+        (let ((history-record (car history)))
+          (if (duplicated-record? record history-record)
+              true
+              (iter record (cdr history))))))
+  (iter record history))

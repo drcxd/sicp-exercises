@@ -1,7 +1,33 @@
 #+title: Exercise 4.67
 
-I am not sure about this exercise.
+~apply-a-rule~ looks like a good place to check for loops, since only
+rules can cause infinite loops.
 
-Maybe when we start evaluating an expression, we can search the
-existing frame, and see if it has the same query and binding with the
-current expression. If so, then there is a loop?
+In my first attempt, I suppose the history to be a global stack with
+mutable state, every rule applied pushes its state onto the stack, and
+once its application is finished, it pops the state from the stack, so
+that future application of the same rule may not incorrectly trigger a
+loop detection. This attempt did not work out because of the nature of
+the stream used in the query system. When an ~qeval~ returns, it does
+not indicate that all its resulting rule applications has been
+evaluated. Actually, most of the applications are delayed. Thus, the
+history is not correctly maintained, and it fails the purpose of
+detecting loops.
+
+Consider the nature of the delayed execution of streams, the only
+approach would be to let the delayed execution carries the history
+with it. Thus, starting from ~qeval~, many functions needs an additional
+argument to pass the history around.
+
+The test for loops should be performed after the succeeded
+unification, before the evaluation of the rule body. The test should
+compare the state of the current rule application and all the states
+in the history. If a match is found, then there is a loop. The
+evaluation should be stopped, and ~apply-a-rule~ should return
+~the-empty-stream~.
+
+Now we have to determine what the state consists of. The rule and the
+frame it is evaluated within should be enough. For any two different
+evaluations of the same rule, if the bindings of the variables are all
+the same then they definitely will yield the same result, which
+indicates that there is a loop in the chain of deduction.
