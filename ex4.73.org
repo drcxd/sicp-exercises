@@ -1,0 +1,26 @@
+#+title: Exercise 4.73
+
+Using ~delay~, only the first element of the first stream of the input
+stream of ~flatten-stream~ has been evaluated.
+
+Without ~delay~, the first element of each stream in the input stream of
+~flatten-stream~ gets evaluated.
+
+The convention of a stream is that only its first element is
+evaluated, thus removing ~delay~ from ~flatten-stream~ somehow breaks the
+convention.
+
+Also, if the input to ~flatten-stream~ is an infinite stream, then
+without ~delay~, ~flatten-stream~ would never return.
+
+In the query system, is there any chance that ~flatten-stream~ takes an
+infinite stream as input? As far as I know, there is no such
+instance. The reason that the query system falls into infinite loops
+is that it some times fall into a looped deduction route. For example,
+resolving rule A, requires resolving rule B, which in turn requires
+resolving A...
+
+Thus, in the query system, removing the ~delay~ in ~flatten-stream~ would
+not cause any noticeable difference. At least, I have not come up with
+an example that the query system would produce different results for
+the two cases.
