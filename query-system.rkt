@@ -17,6 +17,12 @@
 ;; Convenient functions to avoid manually input assertions to the
 ;; query system every time
 
+(define (add-multiple-assert asserts)
+  (map (lambda (assert)
+         (process-single-input (list 'assert! assert)))
+       asserts)
+  'done)
+
 (define (process-multiple-input input)
   (map process-single-input input)
   'done)
