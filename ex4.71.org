@@ -1,0 +1,41 @@
+#+title: Exercise 4.71
+
+Scheme does not specify the order of argument evaluation. Thus,
+removing ~delay~ would remove the guarantee that ~find-assertions~ is
+evaluated before ~apply-rules~.
+
+Even if the implementation evaluate arguments in the order they appear
+in the argument list, removing ~delay~ would cause ~apply-rules~ being
+evaluated before ~stream-append~ is evaluated. If ~find-assertions~
+returns a non-empty stream, but ~apply-rules~ fall into an infinite
+loop, this would prevent ~simple-query~ from returning. On the other
+hand, if ~delay~ is used, then ~apply-rules~ would not be evaluated when
+~find-assertions~ returns non-empty stream. ~simple-query~ would return
+and these assertions would be printed out in the driver loop. After
+that, ~apply-rules~ gets evaluated and the query system falls into the
+infinite loop.
+
+For example, given the following assertions and queries in the query
+system without a loop detector:
+
+#+begin_src scheme
+  ;; assertions
+  (married Minnie Mickey)
+  (rule (married ?x ?y)
+        (married ?y ?x))
+  ;; query
+  (married Minnie ?x)
+#+end_src
+
+If ~simple-query~ is implemented without ~delay~, then the query system
+would print nothing out because it is trapped inside the infinite loop
+inside the first evaluation of ~simple-query~.
+
+On the other hand, if the ~simple-query~ is implemented with ~delay~, then
+the query system would print =(married Minnie Mickey)= indefinitely.
+
+As for ~disjoin~, removing ~delay~ only removes the guarantee of the
+evaluation order of the arguments. Also, if the other clauses of ~or~
+contains infinite loops, then ~delay~ the evaluation of the other
+clauses may also delay the time when the whole query system falls into
+infinite loops.
