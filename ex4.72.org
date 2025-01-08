@@ -1,0 +1,47 @@
+#+title: Exercise 4.72
+
+~disjoin~ and ~stream-flatmap~ interleave the streams in case one or more
+of the streams are infinite streams. Interleaving helps show the
+elements of other streams.
+
+Given the following assertions:
+
+#+begin_src scheme
+  (married Minnie Mickey)
+  (rule (married ?x ?y)
+        (married ?y ?x))
+  (friend Tom Jerry)
+  (rule (friend ?x ?y)
+        (friend ?y ?x))
+#+end_src
+
+The query ~(or (married Mickey ?x) (friend Jerry ?y))~ yields the
+following output in a query system where ~disjoin~ is implemented with
+interleaving:
+
+#+begin_src scheme
+  ;;; Query input:
+  (or (married Mickey ?x) (friend Jerry ?y))
+
+  ;;; Query results:
+  (or (married Mickey Minnie) (friend Jerry ?y))
+  (or (married Mickey ?x) (friend Jerry Tom))
+  (or (married Mickey Minnie) (friend Jerry ?y))
+  (or (married Mickey ?x) (friend Jerry Tom))
+  ;;; more repeated results...
+#+end_src
+
+This is the output yielded with the same query but in a query system
+where ~disjoint~ is implemented with appending:
+
+#+begin_src scheme
+  ;;; Query input:
+  (or (married Mickey ?x) (friend Jerry ?y))
+
+  ;;; Query results:
+  (or (married Mickey Minnie) (friend Jerry ?y))
+  (or (married Mickey Minnie) (friend Jerry ?y))
+  ;;; More repeated resutls...
+#+end_src
+
+Similar argument can be applied to ~stream-flatmap~.
