@@ -15,7 +15,8 @@
            stream-append-delayed
            interleave-delayed
            stream-flatmap
-           singleton-stream)
+           singleton-stream
+           interleave)
 
 (define (stream-car s) (car s))
 (define (stream-cdr s) (force (cdr s)))
@@ -107,3 +108,9 @@
       s2
       (cons-stream (stream-car s1)
                    (stream-append (stream-cdr s1) s2))))
+
+(define (interleave s1 s2)
+  (if (stream-null? s1)
+      s2
+      (cons-stream (stream-car s1)
+                   (interleave s2 (stream-cdr s1)))))
