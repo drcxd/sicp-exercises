@@ -16,7 +16,8 @@
            interleave-delayed
            stream-flatmap
            singleton-stream
-           interleave)
+           interleave
+           simple-stream-flatmap)
 
 (define (stream-car s) (car s))
 (define (stream-cdr s) (force (cdr s)))
@@ -114,3 +115,14 @@
       s2
       (cons-stream (stream-car s1)
                    (interleave s2 (stream-cdr s1)))))
+
+;; Exercise 4.74
+
+(define (simple-stream-flatmap proc s)
+  (simple-flatten (stream-map proc s)))
+
+(define (simple-flatten stream)
+  (stream-map stream-car
+              (stream-filter
+               (lambda (s) (not (stream-null? s)))
+               stream)))
