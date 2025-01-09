@@ -440,3 +440,26 @@
               true
               (iter record (cdr history))))))
   (iter record history))
+
+;; unique
+
+;; Exercise 4.75
+
+(define (stream-unique? s)
+  (and (not (stream-null? s))
+       (stream-null? (stream-cdr s))))
+
+(define (uniqued-query exps) (car exps))
+
+(define (uniquely-asserted operands frame-stream history)
+  (stream-flatmap
+   (lambda (frame)
+     (let ((result (qeval
+                    (uniqued-query operands)
+                    (singleton-stream frame)
+                    history)))
+       (if (stream-unique? result)
+           result
+           the-empty-stream)))
+   frame-stream))
+(put uniquely-asserted 'unique 'qeval)
