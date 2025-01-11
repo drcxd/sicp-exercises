@@ -83,19 +83,38 @@
 
 ;; Exercise 4.76
 
-;; (define (merge-match)
-;;   1)
+;; find out the value of p1 in frame1 and add it to frame2
+(define (merge-if-possible p1 p2 frame1 frame2)
+  (let ((binding (binding-in-frame p1 frame1)))
+    (cond (binding
+           (merge-unify-match (binding-value binding) p2 frame1 frame2))
+          ((var? p2)
+           (let ((binding (binding-in-frame p2 frame2)))
+             (if binding
+                 (merge-unify-match p1 (binding-value binding) frame1 frame2)
+                 (extend p1 p2 frame2))))
+          ;; TODO: maybe we need to check dependency
+          (else (extend p1 p2 frame2)))))
 
-;; (define (merge-if-possible var val frame1 frame2)
-;;   (let ((binding (binding-in-frame var frame2)))
-;;     (cond (binding
-;;            (merge-match (binding-value) val frame1 frame2))
-;;           ((var? val)
-;;            (let ((binding (binding-in-frame val frame1)))
-;;              (if binding
-;;                  (merge-match var val frame1 frame2)
-;;                  (extend var val frame2))))
-;;           ())))
+(define (merge-unify-match p1 p2 frame1 frame2)
+  (cond ((eq? frame2 'failed) 'failed)
+        ((equal? p1 p2) frame2)
+        ((var? p1) (merge-if-possible p1 p2 frame1 frame2))
+        ((var? p2) (merge-if-possible p2 p1 frame2 frame2))
+        ((and (pair? p1) (pair? p2))
+         (merge-unify-match
+          (cdr p1)
+          (cdr p2)
+          frame1
+          (merge-unify-match (car p1) (car p2) frame1 frame2)))
+        (else 'failed)))
+
+(define (add-if-possible var val frame1 frame2)
+  (let ((binding2 (binding-in-frame var frame2)))
+    (if binding2
+        (let ((val2 (binding-value binding2)))
+          (merge-unify-match val val2 frame1 frame2))
+        (extend var val frame2))))
 
 (define (merge-frame frame1 frame2)
   (define (iter f1 f2)
@@ -104,10 +123,10 @@
         (let ((binding1 (car f1)))
           (let ((var (binding-variable binding1))
                 (val (binding-value binding1)))
-            (let ((result (merge-if-possible var val frame1 f2)))
+            (let ((result (add-if-possible var val frame1 f2)))
               (if (eq? result 'failed)
                   the-empty-stream
-                  (merge-frame (cdr f1) result)))))))
+                  (iter (cdr f1) result)))))))
   (iter frame1 frame2))
 
 (define (merge-frame-stream s1 s2)
@@ -124,7 +143,7 @@
       frame-stream
       (let ((s (qeval (first-conjunct conjuncts) (singleton-stream '()) history)))
         (conjoin (rest-conjuncts conjuncts)
-                 (merge-frame-stream frame-stream s)
+                 (merge-frame-stream s frame-stream)
                  history))))
 
 ;; (define (conjoin conjuncts frame-stream history)
@@ -510,63 +529,3 @@
            the-empty-stream)))
    frame-stream))
 (put uniquely-asserted 'unique 'qeval)
-
-(add-multiple-assert '((address (Bitdiddle Ben) (Slumerville (Ridge Road) 10))
-                       (job (Bitdiddle Ben) (computer wizard))
-                       (salary (Bitdiddle Ben) 60000)
-                       (address (Hacker Alyssa P) (Cambridge (Mass Ave) 78))
-                       (job (Hacker Alyssa P) (computer programmer))
-                       (salary (Hacker Alyssa P) 40000)
-                       (supervisor (Hacker Alyssa P) (Bitdiddle Ben))
-                       (address (Fect Cy D) (Cambridge (Ames Street) 3))
-                       (job (Fect Cy D) (computer programmer))
-                       (salary (Fect Cy D) 35000)
-                       (supervisor (Fect Cy D) (Bitdiddle Ben))
-                       (address (Tweakit Lem E) (Boston (Bay State Road) 22))
-                       (job (Tweakit Lem E) (computer technician))
-                       (salary (Tweakit Lem E) 25000)
-                       (supervisor (Tweakit Lem E) (Bitdiddle Ben))
-                       (address (Reasoner Louis) (Slumerville (Pine Tree Road) 80))
-                       (job (Reasoner Louis) (computer programmer trainee))
-                       (salary (Reasoner Louis) 30000)
-                       (supervisor (Reasoner Louis) (Hacker Alyssa P))
-                       (supervisor (Bitdiddle Ben) (Warbucks Oliver))
-                       (address (Warbucks Oliver) (Swellesley (Top Heap Road)))
-                       (job (Warbucks Oliver) (administration big wheel))
-                       (salary (Warbucks Oliver) 150000)
-                       (address (Scrooge Eben) (Weston (Shady Lane) 10))
-                       (job (Scrooge Eben) (accounting chief accountant))
-                       (salary (Scrooge Eben) 75000)
-                       (supervisor (Scrooge Eben) (Warbucks Oliver))
-                       (address (Cratchet Robert) (Allston (N Harvard Street) 16))
-                       (job (Cratchet Robert) (accounting scrivener))
-                       (salary (Cratchet Robert) 18000)
-                       (supervisor (Cratchet Robert) (Scrooge Eben))
-                       (address (Aull DeWitt) (Slumerville (Onion Square) 5))
-                       (job (Aull DeWitt) (administration secretary))
-                       (salary (Aull DeWitt) 25000)
-                       (supervisor (Aull DeWitt) (Warbucks Oliver))
-                       (can-do-job (computer wizard) (computer programmer))
-                       (can-do-job (computer wizard) (computer technician))
-                       (can-do-job (computer programmer)
-                                   (computer programmer trainee))
-                       (can-do-job (administration secretary)
-                                   (administration big wheel))))
-
-(process-single-input '(assert! (rule (last-pair (?x . ()) (?x)))))
-(process-single-input '(assert! (rule (last-pair (?x . ?y) ?z)
-                                      (last-pair ?y ?z))))
-
-(process-multiple-input
- '((assert! (rule (append-to-form () ?y ?y)))
-   (assert! (rule (append-to-form (?u . ?v) ?y (?u . ?z))
-                  (append-to-form ?v ?y ?z)))
-   (assert! (rule (reverse () ())))
-   (assert! (rule (reverse ?x (?y . ?z))
-                  (and (append-to-form ?u (?y) ?x)
-                       (reverse ?u ?z))))
-   (assert! (rule (reverse (?x . ?y) ?z)
-                  (and (append-to-form ?u (?x) ?z)
-                       (reverse ?y ?u))))))
-
-(query-driver-loop)

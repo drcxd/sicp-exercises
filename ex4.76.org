@@ -1,0 +1,79 @@
+#+title: Exercise 4.76
+
+There is a problem of the changes to the query system implemented in
+this exercise.
+
+For example, given the following query:
+
+#+begin_src scheme
+  (and (append-to-form ?x ?y (1 2 3 4))
+       (last-pair ?x (3)))
+#+end_src
+
+In the original implementation of ~and~, the evaluation ~append-to-form~
+generates some frames where ~?x~ is bound to some certain value. In such
+frames, ~(last-pair ?x (3))~ can evaluate without fall into the infinite
+loop, since ~?x~ is already bound.
+
+In the new implementation proposed in this exercise, each query is
+evaluated separately in an empty frame, thus ~(last-pair ?x (3))~
+generates infinite results.
+
+In my query system with a loop detector, ~(last-pair ?x (3))~ will yield
+two records:
+
+#+begin_src scheme
+  (last-pair (3) (3))
+  (last-pair (?x-6 3) (3))
+#+end_src
+
+The last one looks wired at the first glance, but it is totally
+reasonable since it can be interpreted as "the last pair for any list
+that whose last element is ~3~ is ~(3)~".
+
+However, merging such a record with a frame that contains the result
+of ~(append-to-form ?x ?y)~ is highly complicated.
+
+For example:
+
+#+begin_example
+  frame1 => (((? 8 x) . 3)
+             ((? 6 y) (? 8 x))
+             ((? 6 z) 3)
+             ((? x) (? 6 x) ? 6 y))
+  frame2 => (((? x) (? 1 u) ? 1 v)
+             ((? y) ? 1 y)
+             ((? 1 u) . 1)
+             ((? 1 z) 2 3)
+             ((? 1 v) (? 2 u) ? 2 v)
+             ((? 1 y) ? 2 y)
+             ((? 2 u) . 2)
+             ((? 2 z) 3)
+             ((? 2 v) (? 3 u) ? 3 v)
+             ((? 2 y) ? 3 y)
+             ((? 3 u) . 3)
+             ((? 3 z))
+             ((? 3 v))
+             ((? 3 y) ? 5 y)
+             ((? 5 y)))
+#+end_example
+
+=frame1= is a frame after evaluating ~(last-pair ?x (3))~, and =frame2= is a
+frame after evaluating ~(append-to-form ?x ?y)~. 
+
+Using my current algorithm to merge these two records requires merging
+~?x-6~ with ~?u-1~, which succeeds by binding ~?x-6~ to 1. However, it next
+requires merging ~?y-6~ with ~?v-1~. This fails since in =frame1= ~?y-6~ is
+bound to 3, but in =frame2= ~v-1~ is bound to ~(?u-2 ?v-2)~.
+
+The original implementation does not share this problem, because it
+tries to unify variables in ~last-pair~ with existing bindings rather
+than first evaluate the query then try to merge them.
+
+The similar process in the original implementation requires unifying
+~(?x-6 ?y-6)~ with ~(?u-1 ?v-1)~. However, since in this case, ~last-pair~
+has not been evaluated, ~?y-6~ is not bound yet, thus it can be
+successfully unified as ~(?u-2 ?v-2)~.
+
+Currently I can not figure out how to make the merge algorithm handle
+such situations correctly.
