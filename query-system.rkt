@@ -71,7 +71,23 @@
   (let ((qproc (get (type query) 'qeval)))
     (if qproc
         (qproc (contents query) frame-stream history)
-        (simple-query query frame-stream history))))
+        (let ((fs (simple-query query frame-stream history)))
+          ;; check if is there any delayed filter promise can be
+          ;; fulfilled now
+          (stream-map
+           (lambda (frame)
+             (define (iter f)
+               (if (null? f)
+                   frame
+                   (let ((element (car frame)))
+                     (if (filter-promise? element)
+                         (let ((exps (filter-promise-exps element)))
+                           (if (ready? frame exps)
+                               (negate-filter frame exps history)
+                               (iter (cdr f))))
+                         (iter (cdr f))))))
+             (iter frame))
+           fs)))))
 
 (define (simple-query query-pattern frame-stream history)
   (stream-flatmap
@@ -97,15 +113,43 @@
        (delay (disjoin (rest-disjuncts disjuncts) frame-stream history)))))
 (put disjoin 'or 'qeval)
 
+(define (make-filter-promise operands)
+  (cons 'filter-promise operands))
+
+(define (filter-promise? exp)
+  (tagged-list? exp 'filter-promise))
+
+(define (filter-promise-exps exp)
+  (cdr exp))
+
+(define (ready? frame exps)
+  (define (tree-walk exps)
+      (cond ((var? exps)
+             (let ((binding (binding-in-frame exps frame)))
+               (if binding
+                   (tree-walk (binding-value binding))
+                   false)))
+            ((pair? exps) (and (tree-walk (car exps))
+                               (tree-walk (cdr exps))))
+            (else true)))
+  (tree-walk exps))
+
+(define (negate-filter frame query history)
+  (if (stream-null?
+       (qeval query
+              (singleton-stream frame)
+              history))
+      (singleton-stream frame)
+      the-empty-stream))
+
 (define (negate operands frame-stream history)
   (stream-flatmap
    (lambda (frame)
-     (if (stream-null?
-          (qeval (negated-query operands)
-                 (singleton-stream frame)
-                 history))
-         (singleton-stream frame)
-         the-empty-stream))
+     (let ((query (negated-query operands)))
+       (if (ready? frame query)
+           (negate-filter frame query history)
+           (singleton-stream
+            (append frame (list (make-filter-promise query)))))))
    frame-stream))
 (put negate 'not 'qeval)
 
@@ -463,3 +507,47 @@
            the-empty-stream)))
    frame-stream))
 (put uniquely-asserted 'unique 'qeval)
+
+(add-multiple-assert '((address (Bitdiddle Ben) (Slumerville (Ridge Road) 10))
+                       (job (Bitdiddle Ben) (computer wizard))
+                       (salary (Bitdiddle Ben) 60000)
+                       (address (Hacker Alyssa P) (Cambridge (Mass Ave) 78))
+                       (job (Hacker Alyssa P) (computer programmer))
+                       (salary (Hacker Alyssa P) 40000)
+                       (supervisor (Hacker Alyssa P) (Bitdiddle Ben))
+                       (address (Fect Cy D) (Cambridge (Ames Street) 3))
+                       (job (Fect Cy D) (computer programmer))
+                       (salary (Fect Cy D) 35000)
+                       (supervisor (Fect Cy D) (Bitdiddle Ben))
+                       (address (Tweakit Lem E) (Boston (Bay State Road) 22))
+                       (job (Tweakit Lem E) (computer technician))
+                       (salary (Tweakit Lem E) 25000)
+                       (supervisor (Tweakit Lem E) (Bitdiddle Ben))
+                       (address (Reasoner Louis) (Slumerville (Pine Tree Road) 80))
+                       (job (Reasoner Louis) (computer programmer trainee))
+                       (salary (Reasoner Louis) 30000)
+                       (supervisor (Reasoner Louis) (Hacker Alyssa P))
+                       (supervisor (Bitdiddle Ben) (Warbucks Oliver))
+                       (address (Warbucks Oliver) (Swellesley (Top Heap Road)))
+                       (job (Warbucks Oliver) (administration big wheel))
+                       (salary (Warbucks Oliver) 150000)
+                       (address (Scrooge Eben) (Weston (Shady Lane) 10))
+                       (job (Scrooge Eben) (accounting chief accountant))
+                       (salary (Scrooge Eben) 75000)
+                       (supervisor (Scrooge Eben) (Warbucks Oliver))
+                       (address (Cratchet Robert) (Allston (N Harvard Street) 16))
+                       (job (Cratchet Robert) (accounting scrivener))
+                       (salary (Cratchet Robert) 18000)
+                       (supervisor (Cratchet Robert) (Scrooge Eben))
+                       (address (Aull DeWitt) (Slumerville (Onion Square) 5))
+                       (job (Aull DeWitt) (administration secretary))
+                       (salary (Aull DeWitt) 25000)
+                       (supervisor (Aull DeWitt) (Warbucks Oliver))
+                       (can-do-job (computer wizard) (computer programmer))
+                       (can-do-job (computer wizard) (computer technician))
+                       (can-do-job (computer programmer)
+                                   (computer programmer trainee))
+                       (can-do-job (administration secretary)
+                                   (administration big wheel))))
+
+(query-driver-loop)
