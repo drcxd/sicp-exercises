@@ -1,0 +1,27 @@
+#+title: Exercise 4.77
+
+I am not sure that if I had fully installed the feature proposed in
+this exercise. I have only tested my implementation for the simplest
+cases.
+
+For example, the following queries yield identical results:
+
+#+begin_src scheme
+  (and (supervisor ?x ?y) (not (job ?x (computer programmer))))
+  (and (not (job ?x (computer programmer))) (supervisor ?x ?y))
+#+end_src
+
+Also for the ~lisp-value~ operation:
+
+#+begin_src scheme
+  (and (salary ?who ?x) (lisp-value > ?x 50000))
+  (and (lisp-value > ?x 50000) (salary ?who ?x))
+#+end_src
+
+I basically implemented the idea described in the exercise. Before
+actually filtering the frames, the variables used in the filtering are
+checked, and if there is any one that is not bound, then the filtering
+is delayed by appending necessary data as a "filtering promise" to the
+end of the frame. Then, after every evaluation of a simple query, the
+frame is examined and any filtering promise is checked again, and if
+its required variables are all bound, then perform the filtering.

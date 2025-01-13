@@ -4,6 +4,7 @@
 (#%require "./table.rkt")
 (#%require "./stream.rkt")
 (#%require "./tagged-list.rkt")
+(#%require "./list-operations.rkt")
 
 (define query-system-table (make-table))
 (define (get . keys)
@@ -72,18 +73,21 @@
     (if qproc
         (qproc (contents query) frame-stream history)
         (let ((fs (simple-query query frame-stream history)))
-          ;; check if is there any delayed filter promise can be
+          ;; check if there is any delayed filter promise can be
           ;; fulfilled now
-          (stream-map
+          (stream-flatmap
            (lambda (frame)
              (define (iter f)
                (if (null? f)
-                   frame
-                   (let ((element (car frame)))
+                   (singleton-stream frame)
+                   (let ((element (car f)))
                      (if (filter-promise? element)
-                         (let ((exps (filter-promise-exps element)))
-                           (if (ready? frame exps)
-                               (negate-filter frame exps history)
+                         (let ((exps (filter-promise-exps element))
+                               (proc (filter-promise-proc element)))
+                           (if (ready? exps frame)
+                               ;; remove the promise from the frame to
+                               ;; avoid infinite loop
+                               (proc exps (remove element frame) history)
                                (iter (cdr f))))
                          (iter (cdr f))))))
              (iter frame))
@@ -113,16 +117,19 @@
        (delay (disjoin (rest-disjuncts disjuncts) frame-stream history)))))
 (put disjoin 'or 'qeval)
 
-(define (make-filter-promise operands)
-  (cons 'filter-promise operands))
+(define (make-filter-promise proc operand)
+  (cons 'filter-promise (cons proc operand)))
 
 (define (filter-promise? exp)
   (tagged-list? exp 'filter-promise))
 
-(define (filter-promise-exps exp)
-  (cdr exp))
+(define (filter-promise-proc exp)
+  (cadr exp))
 
-(define (ready? frame exps)
+(define (filter-promise-exps exp)
+  (cddr exp))
+
+(define (ready? exps frame)
   (define (tree-walk exps)
       (cond ((var? exps)
              (let ((binding (binding-in-frame exps frame)))
@@ -134,7 +141,7 @@
             (else true)))
   (tree-walk exps))
 
-(define (negate-filter frame query history)
+(define (negate-query query frame history)
   (if (stream-null?
        (qeval query
               (singleton-stream frame)
@@ -146,24 +153,32 @@
   (stream-flatmap
    (lambda (frame)
      (let ((query (negated-query operands)))
-       (if (ready? frame query)
-           (negate-filter frame query history)
+       (if (ready? query frame)
+           (negate-query query frame history)
            (singleton-stream
-            (append frame (list (make-filter-promise query)))))))
+            (append frame
+                    (list (make-filter-promise negate-query query)))))))
    frame-stream))
 (put negate 'not 'qeval)
+
+(define (execute-call call frame history)
+  (if (execute
+       (instantiate
+           call
+           frame
+         (lambda (v f)
+           (error "Unknown pat var: LISP-VALUE" v))))
+      (singleton-stream frame)
+      the-empty-stream))
 
 (define (lisp-value call frame-stream history)
   (stream-flatmap
    (lambda (frame)
-     (if (execute
-          (instantiate
-              call
-              frame
-            (lambda (v f)
-              (error "Unknown pat var: LISP-VALUE" v))))
-         (singleton-stream frame)
-         the-empty-stream))
+     (if (ready? call frame)
+         (execute-call call frame history)
+         (singleton-stream
+          (append frame
+                  (list (make-filter-promise execute-call call))))))
    frame-stream))
 (put lisp-value 'lisp-value 'qeval)
 
