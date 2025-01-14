@@ -1,0 +1,39 @@
+#+title: Exercise 4.78
+
+* Merging Two Systems
+
+I choose to implement the query system as a nondeterministic
+evaluator, instead of using a nondeterministic evaluator to implement
+it. One reason is that this seems like a neater way to me (more on
+this later). Another is that I feel this option is more interesting
+than the other. Thus, the implementation process feels like merging
+two systems together, rather than implementing one based upon another.
+
+* The Empty Stream
+
+In the original query system with a stream architecture, any failed
+assertion query or rule deduction would return an empty stream, which
+will be omitted when flattened with other streams.
+
+In the query system with a nondeterministic evaluator architecture, an
+evaluation should always returns one value. Thus, we need a special
+value which is isomorphic to the empty stream in the stream
+architecture. An empty frame looks promising in the first glance,
+however, there are successful queries that may end with an empty
+frame, for example, a query without variables.
+
+Thus, I use a special value ~'failed-frame~ as the return value when
+something goes wrong. When the query system sees such a return value
+from an evaluation, it would automatically try the nearest
+alternatives rather than instantiating it.
+
+* Difficulties with Infinities
+
+Without streams, I have no idea how to deal with infinities. This
+leads to problems when evaluating the special form ~or~. In the stream
+architecture, its operand queries are interleaved in case one of them
+yields infinite streams so that it suppresses the results of other
+streams. In the nondeterministic architecture, I have no idea how such
+interleaving can be performed. Thus, if one operand query yields
+infinite results, the results of other operand query may never have a
+chance to be printed.
