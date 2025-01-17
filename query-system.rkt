@@ -12,7 +12,7 @@
   (table-set query-system-table value keys))
 
 (define input-prompt ";;; Query input:")
-(define output-prompt ";;; Query results:")
+(define output-prompt ";;; Query results:\n")
 
 ;; The driver loop
 
@@ -29,120 +29,122 @@
            (display output-prompt)
            (display-stream
             (stream-map
-             (lambda (frame)
+             (lambda (env)
                (instantiate
                    q
-                   frame
+                   env
                  (lambda (v f)
                    (contract-question-mark v))))
-             (qeval q (singleton-stream '()))))
+             (qeval q (singleton-stream the-empty-environment))))
            (query-driver-loop)))))
 
-(define (instantiate exp frame unbound-var-handler)
-  (define (copy exp)
-    (cond ((var? exp)
-           (let ((binding (binding-in-frame exp frame)))
-             (if binding
-                 (copy (binding-value binding))
-                 (unbound-var-handler exp frame))))
-          ((pair? exp)
-           (cons (copy (car exp)) (copy (cdr exp))))
-          (else exp)))
-  (copy exp))
+(define (instantiate exp env unbound-var-handler)
+  (let ((region (frame-region-ii (env-first-frame env))))
+    (define (copy exp)
+      (cond ((var? exp)
+             (let ((binding (binding-in-region exp region)))
+               (if binding
+                   (copy (binding-value binding))
+                   (unbound-var-handler exp region))))
+            ((pair? exp)
+             (cons (copy (car exp)) (copy (cdr exp))))
+            (else exp)))
+    (copy exp)))
 
 ;; The evaluator
 
-(define (qeval query frame-stream)
+(define (qeval query env-stream)
   (let ((qproc (get (type query) 'qeval)))
     (if qproc
-        (qproc (contents query) frame-stream)
-        (simple-query query frame-stream))))
+        (qproc (contents query) env-stream)
+        (simple-query query env-stream))))
 
-(define (simple-query query-pattern frame-stream)
+(define (simple-query query-pattern env-stream)
   (stream-flatmap
-   (lambda (frame)
+   (lambda (env)
      (stream-append-delayed
-      (find-assertions query-pattern frame)
-      (delay (apply-rules query-pattern frame))))
-   frame-stream))
+      (find-assertions query-pattern env)
+      (delay (apply-rules query-pattern env))))
+   env-stream))
 
-(define (conjoin conjuncts frame-stream)
+(define (conjoin conjuncts env-stream)
   (if (empty-conjunction? conjuncts)
-      frame-stream
+      env-stream
       (conjoin (rest-conjuncts conjuncts)
-               (qeval (first-conjunct conjuncts) frame-stream))))
+               (qeval (first-conjunct conjuncts) env-stream))))
 (put conjoin 'and 'qeval)
 
-(define (disjoin disjuncts frame-stream)
+(define (disjoin disjuncts env-stream)
   (if (empty-disjunction? disjuncts)
       the-empty-stream
       (interleave-delayed
-       (qeval (first-disjunct disjuncts) frame-stream)
-       (delay (disjoin (rest-disjuncts disjuncts) frame-stream)))))
+       (qeval (first-disjunct disjuncts) env-stream)
+       (delay (disjoin (rest-disjuncts disjuncts) env-stream)))))
 (put disjoin 'or 'qeval)
 
-(define (negate operands frame-stream)
+(define (negate operands evn-stream)
   (stream-flatmap
-   (lambda (frame)
+   (lambda (env)
      (if (stream-null?
           (qeval (negated-query operands)
-                 (singleton-stream frame)))
-         (singleton-stream frame)
+                 (singleton-stream env)))
+         (singleton-stream env)
          the-empty-stream))
-   frame-stream))
+   evn-stream))
 (put negate 'not 'qeval)
 
-(define (lisp-value call frame-stream)
+(define (lisp-value call env-stream)
   (stream-flatmap
-   (lambda (frame)
+   (lambda (env)
      (if (execute
           (instantiate
               call
-              frame
+              env
             (lambda (v f)
               (error "Unknown pat var: LISP-VALUE" v))))
-         (singleton-stream frame)
+         (singleton-stream env)
          the-empty-stream))
-   frame-stream))
+   env-stream))
 (put lisp-value 'lisp-value 'qeval)
 
 (define (execute exp)
   (apply (eval (predicate exp) user-initial-environment)
          (args exp)))
 
-(define (always-true ignore frame-stream) frame-stream)
+(define (always-true ignore env-stream) env-stream)
 (put always-true 'always-true 'qeval)
 
 ;; Finding assertions by pattern matching
 
-(define (find-assertions pattern frame)
+(define (find-assertions pattern env)
   (stream-flatmap
-   (lambda (datum) (check-an-assertion datum pattern frame))
-   (fetch-assertions pattern frame)))
+   (lambda (datum) (check-an-assertion datum pattern env))
+   (fetch-assertions pattern env)))
 
-(define (check-an-assertion assertion query-pat query-frame)
-  (let ((match-result
-         (pattern-match query-pat assertion query-frame)))
-    (if (eq? match-result 'failed)
-        the-empty-stream
-        (singleton-stream match-result))))
+(define (check-an-assertion assertion query-pat env)
+  (let ((region (frame-region-ii (env-first-frame env))))
+    (let ((match-result
+           (pattern-match query-pat assertion region)))
+      (if (eq? match-result 'failed)
+          the-empty-stream
+          (singleton-stream (pack-region-ii match-result env))))))
 
-(define (pattern-match pat dat frame)
-  (cond ((eq? frame 'failed) 'failed)
-        ((equal? pat dat) frame)
-        ((var? pat) (extend-if-consistent pat dat frame))
+(define (pattern-match pat dat region)
+  (cond ((eq? region 'failed) 'failed)
+        ((equal? pat dat) region)
+        ((var? pat) (extend-if-consistent pat dat region))
         ((and (pair? pat) (pair? dat))
          (pattern-match
           (cdr pat)
           (cdr dat)
-          (pattern-match (car pat) (car dat) frame)))
+          (pattern-match (car pat) (car dat) region)))
         (else 'failed)))
 
-(define (extend-if-consistent var dat frame)
-  (let ((binding (binding-in-frame var frame)))
+(define (extend-if-consistent var dat region)
+  (let ((binding (binding-in-region var region)))
     (if binding
-        (pattern-match (binding-value binding) dat frame)
-        (extend var dat frame))))
+        (pattern-match (binding-value binding) dat region)
+        (extend var dat region))))
 
 ;; Rules and unification
 
@@ -186,11 +188,11 @@
         (else 'failed)))
 
 (define (extend-if-possible var val frame)
-  (let ((binding (binding-in-frame var frame)))
+  (let ((binding (binding-in-region var frame)))
     (cond (binding
            (unify-match (binding-value binding) val frame))
           ((var? val) ; ***
-           (let ((binding (binding-in-frame val frame)))
+           (let ((binding (binding-in-region val frame)))
              (if binding
                  (unify-match
                   var (binding-value binding) frame)
@@ -204,7 +206,7 @@
     (cond ((var? e)
            (if (equal? var e)
                true
-               (let ((b (binding-in-frame e frame)))
+               (let ((b (binding-in-region e frame)))
                  (if b
                      (tree-walk (binding-value b))
                      false))))
@@ -362,11 +364,44 @@
   (cons variable value))
 (define (binding-variable binding) (car binding))
 (define (binding-value binding) (cdr binding))
-(define (binding-in-frame variable frame)
-  (assoc variable frame))
-(define (extend variable value frame)
-  (cons (make-binding variable value) frame))
+(define (binding-in-region variable region)
+  (assoc variable region))
+(define (extend variable value region)
+  (cons (make-binding variable value) region))
 
 ;; Environment
 
 (define user-initial-environment (interaction-environment))
+
+;; Query Environment
+
+(define (make-frame region-i region-ii) (cons region-i region-ii))
+
+(define the-empty-frame (make-frame '() '()))
+
+(define (frame-region-i frame)
+  (car frame))
+
+(define (frame-region-ii frame)
+  (cdr frame))
+
+(define the-empty-environment (list the-empty-frame))
+
+(define (env-first-frame env) (car env))
+
+(define (env-second-frame env)
+  (if (not (null? (cdr env)))
+      (cadr env)
+      false))
+
+(define (pack-region-i region-i env)
+  (let ((frame (env-first-frame env)))
+    (let ((region-ii (frame-region-ii frame)))
+      (cons (make-frame region-i region-ii) (cdr env)))))
+
+(define (pack-region-ii region-ii env)
+  (let ((frame (env-first-frame env)))
+    (let ((region-i (frame-region-i frame)))
+      (cons (make-frame region-i region-ii) (cdr env)))))
+
+(query-driver-loop)
