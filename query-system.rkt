@@ -50,9 +50,8 @@
   (process-single-input (read))
   (query-driver-loop))
 
-(define (instantiate exp env unbound-var-handler)
-  (let ((region (frame-region-ii (env-first-frame env))))
-    (define (copy exp)
+(define (instantiate-with-region exp region unbound-var-handler)
+  (define (copy exp)
       (cond ((var? exp)
              (let ((binding (binding-in-region exp region)))
                (if binding
@@ -61,7 +60,11 @@
             ((pair? exp)
              (cons (copy (car exp)) (copy (cdr exp))))
             (else exp)))
-    (copy exp)))
+  (copy exp))
+
+(define (instantiate exp env unbound-var-handler)
+  (let ((region (frame-region-ii (env-first-frame env))))
+    (instantiate-with-region exp region unbound-var-handler)))
 
 ;; The evaluator
 
@@ -139,7 +142,7 @@
            (pattern-match query-pat assertion region)))
       (if (eq? match-result 'failed)
           the-empty-stream
-          (singleton-stream (pack-region-ii match-result env))))))
+          (singleton-stream (pack-region-ii-in-env match-result env))))))
 
 (define (pattern-match pat dat region)
   (cond ((eq? region 'failed) 'failed)
@@ -160,20 +163,32 @@
 
 ;; Rules and unification
 
-(define (apply-rules pattern frame)
+(define (apply-rules pattern env)
   (stream-flatmap (lambda (rule)
-                    (apply-a-rule rule pattern frame))
-                  (fetch-rules pattern frame)))
+                    (apply-a-rule rule pattern env))
+                  (fetch-rules pattern env)))
 
-(define (apply-a-rule rule query-pattern query-frame)
-  (let ((clean-rule (rename-variables-in rule)))
-    (let ((unify-result (unify-match query-pattern
-                                     (conclusion clean-rule)
-                                     query-frame)))
-      (if (eq? unify-result 'failed)
-          the-empty-stream
-          (qeval (rule-body clean-rule)
-                 (singleton-stream unify-result))))))
+(define (apply-a-rule rule query-pattern env)
+  (let ((unify-result (unify-match-begin query-pattern
+                                         (conclusion rule)
+                                         (create-empty-frame))))
+    (if (eq? unify-result 'failed)
+        the-empty-stream
+        (let ((new-env (cons unify-result env)))
+          (let ((new-query (instantiate (rule-body rule) new-env (lambda (v f) v))))
+            ;; TODO: maybe a stream-filter is required to filter out failures
+            (stream-map
+             (lambda (env)
+               ;; resolve the region i of the first frame using the region ii of the first frame
+               ;; then move bindings in region i of the first frame to region ii of the second frame
+               ;; then return the environment without the first frame
+               (let ((first-frame (env-first-frame env))
+                     (second-frame (env-second-frame env)))
+                 (let ((new-region-ii (transfer-bindings (resolve-regions first-frame)
+                                                         (frame-region-ii second-frame))))
+                   (pack-region-ii-in-env new-region-ii (cdr env)))))
+             (qeval new-query
+                   (singleton-stream new-env))))))))
 
 (define (rename-variables-in rule)
   (let ((rule-application-id (new-rule-application-id)))
@@ -185,6 +200,63 @@
                    (tree-walk (cdr exp))))
             (else exp)))
     (tree-walk rule)))
+
+(define (unify-match-begin p1 p2 frame)
+  (cond ((eq? frame 'failed) 'failed)
+        ((var? p1) (extend-region-i frame p1 p2))
+        ((var? p2) (extend-region-ii frame p2 p1))
+        ((and (pair? p1) (pair? p2))
+         (unify-match-begin (cdr p1)
+                            (cdr p2)
+                            (unify-match-begin (car p1)
+                                               (car p2)
+                                               frame)))
+        ((equal? p1 p2) frame)
+        (else 'failed)))
+
+(define (extend-region-i frame var val)
+  (let ((region-i (frame-region-i frame)))
+    (let ((result (extend-region-if-possible region-i var val)))
+      (if (eq? result 'failed)
+          'failed
+          (pack-region-i-in-frame (extend var val region-i) frame)))))
+
+(define (extend-region-ii frame var val)
+  (let ((region-ii (frame-region-ii frame)))
+    (let ((result (extend-region-if-possible region-ii var val)))
+      (if (eq? result 'failed)
+          'failed
+          (pack-region-ii-in-frame (extend var val region-ii) frame)))))
+
+(define (extend-region-if-possible region var val)
+  (let ((binding (binding-in-region var region)))
+    (if binding
+        (let ((binding-value binding))
+          (if (eq? binding-value val)
+              region
+              'failed))
+        (extend var val region))))
+
+(define (transfer-bindings region1 region2)
+  (if (null? region1)
+      region2
+      (transfer-bindings (cdr region1) (cons (car region1) region2))))
+
+(define (resolve-regions frame)
+  (let ((region-i (frame-region-i frame))
+        (region-ii (frame-region-ii frame)))
+    (define (iter r1 r2)
+      (if (null? r1)
+          r2
+          (let ((var (caar r1))
+                (val (cdar r1)))
+            (iter (cdr r1)
+                  (cons (cons var (instantiate-with-region
+                                   val
+                                   region-ii
+                                   (lambda (v f) v)))
+                        r2)))))
+    (iter region-i '())))
 
 (define (unify-match p1 p2 frame)
   (cond ((eq? frame 'failed) 'failed)
@@ -391,11 +463,20 @@
 
 (define the-empty-frame (make-frame '() '()))
 
+(define (create-empty-frame)
+  (make-frame '() '()))
+
 (define (frame-region-i frame)
   (car frame))
 
 (define (frame-region-ii frame)
   (cdr frame))
+
+(define (pack-region-i-in-frame region frame)
+  (make-frame region (frame-region-ii frame)))
+
+(define (pack-region-ii-in-frame region frame)
+  (make-frame (frame-region-i frame) region))
 
 (define the-empty-environment (list the-empty-frame))
 
@@ -406,14 +487,24 @@
       (cadr env)
       false))
 
-(define (pack-region-i region-i env)
+(define (pack-region-i-in-env region-i env)
   (let ((frame (env-first-frame env)))
     (let ((region-ii (frame-region-ii frame)))
       (cons (make-frame region-i region-ii) (cdr env)))))
 
-(define (pack-region-ii region-ii env)
+(define (pack-region-ii-in-env region-ii env)
   (let ((frame (env-first-frame env)))
     (let ((region-i (frame-region-i frame)))
       (cons (make-frame region-i region-ii) (cdr env)))))
+
+(add-multiple-assert '((rule (last-pair (?x .()) (?x)))
+                       (rule (last-pair (?x . ?y) ?z)
+                             (last-pair ?y ?z))
+                       (rule (append-to-form () ?y ?y))
+                       (rule (append-to-form (?u . ?v) ?y (?u . ?z))
+                             (append-to-form ?v ?y ?z))
+                       (salary John 1000)
+                       (salary Mary 500)
+                       (address Mary China)))
 
 (query-driver-loop)

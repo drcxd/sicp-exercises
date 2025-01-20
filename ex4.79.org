@@ -37,7 +37,7 @@ contains no bindings.
 
 ** Workflow
 
-Matching assertions would only use Region I of the initial frame.
+Matching assertions would only use Region II of the initial frame.
 
 When the unifying of a rule application finishes, a frame is generated
 and inserted to the front of the environment.
@@ -130,3 +130,20 @@ Another example is illustrated as follows:
                   | ?y -> (3)                             | ?y -> (3)
                   | ?z -> (2 3)                           | ?z -> (3)
 #+end_example
+
+** Problem of the Solution
+
+This solution has the problem that it can not solve a rule application
+if one of the variables in the initial query have no direct matching
+variable in the rule conclusion.
+
+For example, the rule application ~(last-pair (1 ?x) (2))~ can be solved
+in the original query system and ~?x~ is resolved to be ~(2)~. In the
+current solution, ~(?x)~ matches ~?y~ in the rule conclusion. I have no
+idea how to express ~?x~ in such a situation.
+
+I think the nature of the problem is that the current solution is
+similar to how procedures are applied in a Scheme evaluation. There is
+an assumption that every argument can be evaluated and only the return
+value should be computed. However, in the query system, this no longer
+holds true.
