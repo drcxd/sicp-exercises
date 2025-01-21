@@ -192,3 +192,22 @@ Test code for the system:
 ** Future Work
 
 Detection for circular dependencies and loops.
+
+* The Problem
+
+#+begin_quote
+Can you relate any of this to the problem of making deductions in a
+context (e.g., "If I supposed that P were true, then I would be able
+to deduce A and B.") as a method of problem solving?  (This problem
+is open-ended. A good answer is probably worth a Ph.D.)
+#+end_quote
+
+I am not sure "This problem" refers to "Can you relate ... as a method
+of problem solving?" or the whole exercise.
+
+If the context provides enough information, then examine the
+environment may enable the system to make such deduction. For example,
+in the solution mentioned above, when using the bindings in region II
+to resolve the bindings in region I, the program is making similar
+deduction. If in region I A and B is bound to P, while in region II P
+is bound to true, then the program deduces that A and B are both true.
