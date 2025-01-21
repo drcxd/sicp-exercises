@@ -52,14 +52,16 @@
 
 (define (instantiate-with-region exp region unbound-var-handler)
   (define (copy exp)
-      (cond ((var? exp)
-             (let ((binding (binding-in-region exp region)))
-               (if binding
-                   (copy (binding-value binding))
-                   (unbound-var-handler exp region))))
-            ((pair? exp)
-             (cons (copy (car exp)) (copy (cdr exp))))
-            (else exp)))
+    (cond ((var? exp)
+           (let ((binding (binding-in-region exp region)))
+             (if binding
+                 ;; NOTE: shallow instantiating, see ex4.79.org
+                 ;; (copy (binding-value binding))
+                 (binding-value binding)
+                 (unbound-var-handler exp region))))
+          ((pair? exp)
+           (cons (copy (car exp)) (copy (cdr exp))))
+          (else exp)))
   (copy exp))
 
 (define (instantiate exp env unbound-var-handler)
@@ -169,26 +171,30 @@
                   (fetch-rules pattern env)))
 
 (define (apply-a-rule rule query-pattern env)
-  (let ((unify-result (unify-match-begin query-pattern
-                                         (conclusion rule)
-                                         (create-empty-frame))))
+  (let ((unify-result (unify-match2 query-pattern
+                                    (conclusion rule)
+                                    (create-empty-frame))))
     (if (eq? unify-result 'failed)
         the-empty-stream
         (let ((new-env (cons unify-result env)))
           (let ((new-query (instantiate (rule-body rule) new-env (lambda (v f) v))))
-            ;; TODO: maybe a stream-filter is required to filter out failures
             (stream-map
              (lambda (env)
-               ;; resolve the region i of the first frame using the region ii of the first frame
-               ;; then move bindings in region i of the first frame to region ii of the second frame
-               ;; then return the environment without the first frame
                (let ((first-frame (env-first-frame env))
                      (second-frame (env-second-frame env)))
-                 (let ((new-region-ii (transfer-bindings (resolve-regions first-frame)
-                                                         (frame-region-ii second-frame))))
-                   (pack-region-ii-in-env new-region-ii (cdr env)))))
+                 (if second-frame
+                     (let ((new-region-ii
+                            (transfer-bindings
+                             (resolve-regions first-frame)
+                             (frame-region-ii second-frame))))
+                       (pack-region-ii-in-env new-region-ii (cdr env)))
+                     env)))
              (qeval new-query
-                   (singleton-stream new-env))))))))
+                    ;; NOTE: if region i of the first frame contains
+                    ;; no bindings, we discard this frame.
+                    (singleton-stream (if (null? (frame-region-i unify-result))
+                                          env
+                                          new-env)))))))))
 
 (define (rename-variables-in rule)
   (let ((rule-application-id (new-rule-application-id)))
@@ -201,16 +207,16 @@
             (else exp)))
     (tree-walk rule)))
 
-(define (unify-match-begin p1 p2 frame)
+(define (unify-match2 p1 p2 frame)
   (cond ((eq? frame 'failed) 'failed)
         ((var? p1) (extend-region-i frame p1 p2))
         ((var? p2) (extend-region-ii frame p2 p1))
         ((and (pair? p1) (pair? p2))
-         (unify-match-begin (cdr p1)
-                            (cdr p2)
-                            (unify-match-begin (car p1)
-                                               (car p2)
-                                               frame)))
+         (unify-match2 (cdr p1)
+                       (cdr p2)
+                       (unify-match2 (car p1)
+                                     (car p2)
+                                     frame)))
         ((equal? p1 p2) frame)
         (else 'failed)))
 
