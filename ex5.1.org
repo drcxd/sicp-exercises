@@ -1,0 +1,19 @@
+#+title: Exercise 5.1
+
+#+begin_src dot :file ex5.1.png
+  digraph {
+      node [fontname="Cascadia Code"]
+      counter [shape="box"];
+      n [shape="box"];
+      product [shape="box"];
+      ge [shape="circle" label=">"];
+      one [shape="triangle" label="1"];
+      add [shape="trapezium"];
+      mul [shape="trapezium"];
+      inc [shape="Mcircle" label="inc"];
+      m2p [shape="Mcircle" label="m->p"];
+  }
+#+end_src
+
+#+RESULTS:
+[[file:ex5.1.png]]
