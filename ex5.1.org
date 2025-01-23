@@ -1,19 +1,63 @@
 #+title: Exercise 5.1
 
-#+begin_src dot :file ex5.1.png
+The data graph:
+
+#+begin_src dot :file ex5.1-data.png
   digraph {
-      node [fontname="Cascadia Code"]
-      counter [shape="box"];
-      n [shape="box"];
-      product [shape="box"];
-      ge [shape="circle" label=">"];
-      one [shape="triangle" label="1"];
-      add [shape="trapezium"];
-      mul [shape="trapezium"];
-      inc [shape="Mcircle" label="inc"];
-      m2p [shape="Mcircle" label="m->p"];
+      node [fontname="IBM Plex Mono"];
+      counter [shape=box];
+      n [shape=box];
+      product [shape=box];
+      g [shape=circle label=">"];
+      one [shape=triangle label="1"];
+      add [shape=trapezium];
+      mul [shape=trapezium];
+      inc [shape=Mcircle label="inc"];
+      m2p [shape=Mcircle label="m->p"];
+
+      counter -> g;
+      n -> g;
+
+      counter -> add;
+      one -> add;
+
+      add -> inc [dir=none];
+      inc -> counter;
+
+      counter -> mul;
+      product -> mul;
+
+      mul -> m2p [dir=none];
+
+      m2p -> product;
+
+      {rank=same; counter; n; product; };
   }
 #+end_src
 
 #+RESULTS:
-[[file:ex5.1.png]]
+[[file:ex5.1-data.png]]
+
+The control graph:
+
+#+begin_src dot :file ex5.1-control.png
+  digraph {
+      node [fontname="IBM Plex Mono"];
+      start [shape=none];
+      g [label=">" shape=diamond];
+      m2p [label="m->p"];
+      inc;
+      done [shape=none];
+
+      start -> g:n;
+      g:s -> done [label="yes"];
+      g:e -> m2p:w [label="no"];
+      m2p:e -> inc:w;
+      inc:s -> g:w;
+
+      {rank=same; g; m2p; inc;};
+  }
+#+end_src
+
+#+RESULTS:
+[[file:ex5.1-control.png]]
