@@ -1,0 +1,37 @@
+#+title: Exercise 5.5
+
+Evaluate ~(fact 3)~, before the first execution of ~(goto (label
+fact-loop))~:
+
+#+begin_example
+  fact-done ;; saved continue
+  3         ;; saved n
+#+end_example
+
+Before the second execution of ~(goto (label fact-loop))~:
+
+#+begin_example
+  fact-done ;; saved continue
+  3         ;; saved n
+  after-fact ;; saved continue
+  2          ;; saved n
+#+end_example
+
+The third execution of the loop goes straight to the base case.
+
+Before the first execution of ~(assign val ...)~:
+
+#+begin_example
+  fact-done ;; saved continue
+  3         ;; saved n
+#+end_example
+
+Now ~n~ holds 2, ~val~ holds 1, and ~continue~ holds ~after-fact~.
+
+Before the second execution of ~(assign val ...)~:
+
+#+begin_example
+  ;; the stack is empty
+#+end_example
+
+Now ~n~ holds 3, ~val~ holds 2, and ~continue~ holds ~fact-done~.
