@@ -1,0 +1,34 @@
+#+title: Exercise 5.4
+
+Recursive exponentiation:
+
+#+begin_src scheme
+  (controller
+   (assign continue expt-done)
+   expt-loop
+   (test (op =) (reg n) (const 0))
+   (branch immediate-answer)
+   (save continue)
+   (assign n (op -) (reg n) (const 1))
+   (goto (label expt-loop))
+   (restore continue)
+   (assign n (op *) (reg b) (reg n))
+   (goto continue)
+   immedidate-answer
+   (assign n (const 1))
+   (goto (reg continue))
+   expt-done)
+#+end_src
+
+Iterative exponentiation:
+
+#+begin_src scheme
+  (controller
+   expt-loop
+   (test (op =) (reg counter) (const 0))
+   (branch expt-done)
+   (assign counter (op -) (reg counter) (const 1))
+   (assign product (op *) (reg b) (reg product))
+   (goto (label expt-loop))
+   expt-done)
+#+end_src
