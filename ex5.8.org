@@ -1,0 +1,11 @@
+#+title: Exercise 5.8
+
+With the simulator is written, register ~a~ will hold 3 when control
+reaches ~there~.
+
+This is because the instructions are processed from the end to the
+start, and the label entries are add to the label table using
+~cons~. Thus, the first label ~here~ appears earlier in the label table
+than the second label ~here~, and its corresponding location will be
+returned by ~lookup-label~, since ~lookup-label~ uses ~assoc~, which finds
+the first entry in the table matches the given key.

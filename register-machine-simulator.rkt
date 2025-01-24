@@ -124,10 +124,13 @@
        (lambda (insts labels)
          (let ((next-inst (car text)))
            (if (symbol? next-inst)
-               (receive insts
-                   (cons (make-label-entry next-inst
-                                           insts)
-                         labels))
+               ;; Exercise 5.8
+               (if (assoc next-inst labels)
+                   (error "Duplicated label: ASSEMBLE" next-inst)
+                   (receive insts
+                       (cons (make-label-entry next-inst
+                                               insts)
+                             labels)))
                (receive (cons (make-instruction next-inst)
                               insts)
                    labels)))))))
@@ -319,3 +322,19 @@
         (cadr val)
         (error "Unknown operation: ASSEMBLE"
                symbol))))
+
+(define expt-machine
+  (make-machine '(a)
+                (list
+                 (list '= =)
+                 (list '- -)
+                 (list '* *))
+                '(start
+                  (goto (label here))
+                  here
+                  (assign a (const 3))
+                  (goto (label there))
+                  here
+                  (assign a (const 4))
+                  (goto (label there))
+                  there)))
