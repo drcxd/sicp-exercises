@@ -4,17 +4,19 @@ Recursive exponentiation:
 
 #+begin_src scheme
   (controller
-   (assign continue expt-done)
+   (assign continue (label expt-done))
    expt-loop
    (test (op =) (reg n) (const 0))
-   (branch immediate-answer)
+   (branch (label immediate-answer))
    (save continue)
+   (assign continue (label after-expt))
    (assign n (op -) (reg n) (const 1))
    (goto (label expt-loop))
+   after-expt
    (restore continue)
    (assign n (op *) (reg b) (reg n))
-   (goto continue)
-   immedidate-answer
+   (goto (reg continue))
+   immediate-answer
    (assign n (const 1))
    (goto (reg continue))
    expt-done)
@@ -26,7 +28,7 @@ Iterative exponentiation:
   (controller
    expt-loop
    (test (op =) (reg counter) (const 0))
-   (branch expt-done)
+   (branch (label expt-done))
    (assign counter (op -) (reg counter) (const 1))
    (assign product (op *) (reg b) (reg product))
    (goto (label expt-loop))
