@@ -1,0 +1,35 @@
+#+title: Exercise 5.3
+
+~good-enough?~ and ~improve~ as primitive operations:
+
+#+begin_src scheme
+  (controller
+   test-good-enough?
+   (test (op good-enough?) (reg guess))
+   (branch sqrt-done)
+   (assign guess (op improve) (reg guess))
+   (goto (label test-good-enough?))
+   sqrt-done)
+#+end_src
+
+Expand ~good-enough?~ and ~improve~:
+
+#+begin_src scheme
+  (controller
+   test-good-enough?
+   (assign t (op mul) (reg guess) (reg guess))
+   (assign t (op sub) (reg t) (reg x))
+   (test (op <) (reg t) (const 0))
+   (branch abs-neg)
+   (goto (label abs-done))
+   abs-neg
+   (assign t (op neg) (reg t))
+   abs-done
+   (test (op <) (reg t) (const 0.001))
+   (branch sqrt-done)
+   (assign t (op div) (reg x) (reg guess))
+   (assign t (op add) (reg guess) (reg t))
+   (assign guess (op div) (reg t) (const 2))
+   (goto (label test-good-enough?))
+   sqrt-done)
+#+end_src
