@@ -1,0 +1,12 @@
+#+title: Exercise 5.2
+
+#+begin_src scheme
+  (controller
+   test-g
+   (test (op >) (reg counter) (reg n))
+   (branch fact-done)
+   (assign product (op mul) (reg product) (reg counter))
+   (assign counter (op add) (reg counter) (const 1))
+   (goto (label test-g))
+   fact-done)
+#+end_src
