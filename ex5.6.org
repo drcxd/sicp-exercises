@@ -1,0 +1,4 @@
+#+title: Exercise 5.6
+
+The instructions: ~(restore continue)~ and ~(save continue)~ between label
+~afterfib-n-1~ and label ~afterfib-n-2~ are redundant.
