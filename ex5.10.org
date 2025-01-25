@@ -1,0 +1,22 @@
+#+title: Exercise 5.10
+
+For example, we can change the syntax of an operation expression from
+
+#+begin_src scheme
+  ((op operator) (operand-1) ... (operand-n))
+#+end_src
+
+to
+
+#+begin_src scheme
+  ((op operator (operand-1) ... (operand-n)))
+#+end_src
+
+
+We only have to modify the procedure ~operation-exp-operands~ as
+follows:
+
+#+begin_src scheme
+  (define (operation-exp-operands operation-exp)
+    (cddr (car operation-exp)))
+#+end_src
