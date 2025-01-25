@@ -325,19 +325,3 @@
         (cadr val)
         (error "Unknown operation: ASSEMBLE"
                symbol))))
-
-(define expt-machine
-  (make-machine '(a)
-                (list
-                 (list '= =)
-                 (list '- -)
-                 (list '* *))
-                '(start
-                  (goto (label here))
-                  here
-                  (assign a (const 3))
-                  (goto (label there))
-                  here
-                  (assign a (const 4))
-                  (goto (label there))
-                  there)))

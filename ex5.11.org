@@ -1,0 +1,27 @@
+#+title: Exercise 5.11
+
+* a
+
+The two instructions after the label ~afterfib-n-2~:
+
+#+begin_src scheme
+  (assign n (reg val))
+  (restore val)
+#+end_src
+
+can be replaced by a single instruction:
+
+#+begin_src scheme
+  (restore n)
+#+end_src
+
+Then ~val~ holds ~Fib(n-2)~ and ~n~ holds ~Fib(n-1)~. This does not change the
+result of executing the instruction
+
+#+begin_src scheme
+  (assign val (op +) (reg val) (reg n))
+#+end_src
+
+* b
+
+
