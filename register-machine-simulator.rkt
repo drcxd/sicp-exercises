@@ -304,7 +304,10 @@
                          operations))
         (aprocs
          (map (lambda (e)
-                (make-primitive-exp e machine labels))
+                ;; Exercise 5.9
+                (if (label-exp? e)
+                    (error "Unknown operand type: ASSEMBLE" e)
+                    (make-primitive-exp e machine labels)))
               (operation-exp-operands exp))))
     (lambda ()
       (apply op (map (lambda (p) (p)) aprocs)))))
