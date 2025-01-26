@@ -24,4 +24,8 @@ result of executing the instruction
 
 * b
 
+See branch =exercise-5.11-b=.
 
+* c
+
+See branch =exercise-5.11-c=.
