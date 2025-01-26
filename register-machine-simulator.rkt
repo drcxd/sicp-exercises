@@ -254,17 +254,21 @@
   (cadr goto-instruction))
 
 (define (make-save inst machine stack pc)
-  (let ((reg (get-register machine
-                           (stack-inst-reg-name inst))))
-    (lambda ()
-      (push stack (get-contents reg))
-      (advance-pc pc))))
+  (let ((reg-name (stack-inst-reg-name inst)))
+    (let ((reg (get-register machine reg-name)))
+      (lambda ()
+        (push stack (cons reg-name (get-contents reg)))
+        (advance-pc pc)))))
 (define (make-restore inst machine stack pc)
-  (let ((reg (get-register machine
-                           (stack-inst-reg-name inst))))
-    (lambda ()
-      (set-contents! reg (pop stack))
-      (advance-pc pc))))
+  (let ((reg-name (stack-inst-reg-name inst)))
+    (let ((reg (get-register machine reg-name)))
+      (lambda ()
+        (let ((saved-reg (pop stack)))
+          (if (eq? reg-name (car saved-reg))
+              (begin
+                (set-contents! reg (cdr saved-reg))
+                (advance-pc pc))
+              (error "Restore to different register: ASSEMBLE" reg-name)))))))
 (define (stack-inst-reg-name stack-instruction)
   (cadr stack-instruction))
 
