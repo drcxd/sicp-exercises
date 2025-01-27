@@ -53,7 +53,11 @@
   (let ((pc (make-register 'pc))
         (flag (make-register 'flag))
         (stack (make-stack))
-        (the-instruction-sequence '()))
+        (the-instruction-sequence '())
+        (unique-insts-map '())
+        (entry-point-regs '())
+        (stack-regs '())
+        (reg-sources-map '()))
     (let ((the-ops
            (list (list 'initialize-stack
                        (lambda () (stack 'initialize)))))
@@ -78,6 +82,26 @@
               (begin
                 ((instruction-execution-proc (car insts)))
                 (execute)))))
+      (define (add-unique-inst type text)
+        (let ((class (assoc type unique-insts-map)))
+          (if (not class)
+              (set! unique-insts-map (cons (cons type (list text))
+                                           unique-insts-map))
+              (set-cdr! class (add-unique text (cdr class))))))
+      (define (get-unique-insts) unique-insts-map)
+      (define (add-entry-point-reg reg-name)
+        (set! entry-point-regs (add-unique reg-name entry-point-regs)))
+      (define (get-entry-point-regs) entry-point-regs)
+      (define (add-stack-reg reg-name)
+        (set! stack-regs (add-unique reg-name stack-regs)))
+      (define (get-stack-regs) stack-regs)
+      (define (add-reg-source reg-name source-exp)
+        (let ((reg-list (assoc reg-name reg-sources-map)))
+          (if (not reg-list)
+              (set! reg-sources-map (cons (cons reg-name (list source-exp))
+                                          reg-sources-map))
+              (set-cdr! reg-list (add-unique source-exp (cdr reg-list))))))
+      (define (get-reg-sources) reg-sources-map)
       (define (dispatch message)
         (cond ((eq? message 'start)
                (set-contents! pc the-instruction-sequence)
@@ -94,9 +118,58 @@
                  (set! the-ops (append the-ops ops))))
               ((eq? message 'stack) stack)
               ((eq? message 'operations) the-ops)
+              ((eq? message 'add-unique-inst) add-unique-inst)
+              ((eq? message 'get-unique-insts) get-unique-insts)
+              ((eq? message 'add-entry-point-reg) add-entry-point-reg)
+              ((eq? message 'get-entry-point-regs) get-entry-point-regs)
+              ((eq? message 'add-stack-reg) add-stack-reg)
+              ((eq? message 'get-stack-regs) get-stack-regs)
+              ((eq? message 'add-reg-source) add-reg-source)
+              ((eq? message 'get-reg-sources) get-reg-sources)
               (else (error "Unknown request: MACHINE"
                            message))))
       dispatch)))
+
+(define (add-unique-inst machine type text)
+  ((machine 'add-unique-inst) type text))
+
+(define (get-unique-insts machine)
+  ((machine 'get-unique-insts)))
+
+(define (add-entry-point-reg machine reg-name)
+  ((machine 'add-entry-point-reg) reg-name))
+
+(define (get-entry-point-regs machine)
+  ((machine 'get-entry-point-regs)))
+
+(define (add-stack-reg machine reg-name)
+  ((machine 'add-stack-reg) reg-name))
+
+(define (get-stack-regs machine)
+  ((machine 'get-stack-regs)))
+
+(define (add-reg-source machine reg-name source-exp)
+  ((machine 'add-reg-source) reg-name source-exp))
+
+(define (get-reg-sources machine)
+  ((machine 'get-reg-sources)))
+
+(define (same-inst? i1 i2)
+  (if (and (pair? i1) (pair? i2))
+      (and (same-inst? (car i1) (car i2))
+           (same-inst? (cdr i1) (cdr i2)))
+      (eq? i1 i2)))
+
+(define (contains? e l)
+  (if (null? l)
+      false
+      (or (same-inst? (car l) e)
+          (contains? e (cdr l)))))
+
+(define (add-unique e l)
+  (if (contains? e l)
+      l
+      (cons e l)))
 
 (define (start machine) (machine 'start))
 (define (get-register-contents machine register-name)
@@ -146,7 +219,10 @@
         inst
         (make-execution-procedure
          (instruction-text inst)
-         labels machine pc flag stack ops)))
+         labels machine pc flag stack ops))
+       (let ((inst-text (instruction-text inst)))
+         (let ((inst-type (car inst-text)))
+           (add-unique-inst machine inst-type inst-text))))
      insts)))
 
 (define (make-instruction text) (cons text '()))
@@ -186,19 +262,24 @@
                 inst))))
 
 (define (make-assign inst machine labels operations pc)
-  (let ((target
-         (get-register machine (assign-reg-name inst)))
-        (value-exp (assign-value-exp inst)))
-    (let ((value-proc
-           (if (operation-exp? value-exp)
-               (make-operation-exp
-                value-exp machine labels operations)
-               (make-primitive-exp
-                (car value-exp) machine labels))))
-      (lambda ()
-        ; execution procedure for assign
-        (set-contents! target (value-proc))
-        (advance-pc pc)))))
+  (let ((reg-name (assign-reg-name inst)))
+    (let ((target (get-register machine reg-name))
+          (value-exp (assign-value-exp inst)))
+      (let ((value-proc
+             (if (operation-exp? value-exp)
+                 (make-operation-exp
+                  value-exp machine labels operations)
+                 (make-primitive-exp
+                  (car value-exp) machine labels)))
+            (source-exp
+             (if (operation-exp? value-exp)
+                 value-exp
+                 (car value-exp))))
+        (add-reg-source machine reg-name source-exp)
+        (lambda ()
+          ; execution procedure for assign
+          (set-contents! target (value-proc))
+          (advance-pc pc))))))
 
 (define (assign-reg-name assign-instruction)
   (cadr assign-instruction))
@@ -244,27 +325,31 @@
                          (label-exp-label dest))))
              (lambda () (set-contents! pc insts))))
           ((register-exp? dest)
-           (let ((reg (get-register
+           (let ((reg-name (register-exp-reg dest)))
+             (let ((reg (get-register
                        machine
-                       (register-exp-reg dest))))
+                       reg-name)))
+             (add-entry-point-reg machine reg-name)
              (lambda ()
-               (set-contents! pc (get-contents reg)))))
+               (set-contents! pc (get-contents reg))))))
           (else (error "Bad GOTO instruction: ASSEMBLE" inst)))))
 (define (goto-dest goto-instruction)
   (cadr goto-instruction))
 
 (define (make-save inst machine stack pc)
-  (let ((reg (get-register machine
-                           (stack-inst-reg-name inst))))
-    (lambda ()
-      (push stack (get-contents reg))
-      (advance-pc pc))))
+  (let ((reg-name (stack-inst-reg-name inst)))
+    (let ((reg (get-register machine reg-name)))
+      (add-stack-reg machine reg-name)
+      (lambda ()
+        (push stack (get-contents reg))
+        (advance-pc pc)))))
 (define (make-restore inst machine stack pc)
-  (let ((reg (get-register machine
-                           (stack-inst-reg-name inst))))
-    (lambda ()
-      (set-contents! reg (pop stack))
-      (advance-pc pc))))
+  (let ((reg-name (stack-inst-reg-name inst)))
+    (let ((reg (get-register machine reg-name)))
+      (add-stack-reg machine reg-name)
+      (lambda ()
+        (set-contents! reg (pop stack))
+        (advance-pc pc)))))
 (define (stack-inst-reg-name stack-instruction)
   (cadr stack-instruction))
 
@@ -325,3 +410,49 @@
         (cadr val)
         (error "Unknown operation: ASSEMBLE"
                symbol))))
+
+(define fact-machine (make-machine
+                      '(continue n val)
+                      (list (list '< <)
+                            (list '- -)
+                            (list '+ +))
+                      '((assign continue (label fib-done))
+                        fib-loop
+                        (test (op <) (reg n) (const 2))
+                        (branch (label immediate-answer))
+                        ;; set up to compute Fib(n − 1)
+                        (save continue)
+                        (assign continue (label afterfib-n-1))
+                        (save n)
+                        ; save old value of n
+                        (assign n (op -) (reg n) (const 1)) ; clobber n to n-1
+                        (goto (label fib-loop))
+                        ; perform recursive call
+                        afterfib-n-1
+                        ; upon return, val contains Fib(n − 1)
+                        (restore n)
+                        (restore continue)
+                        ;; set up to compute Fib(n − 2)
+                        (assign n (op -) (reg n) (const 2))
+                        (save continue)
+                        (assign continue (label afterfib-n-2))
+                        (save val)
+                        ; save Fib(n − 1)
+                        (goto (label fib-loop))
+                        afterfib-n-2
+                        ; upon return, val contains Fib(n − 2)
+                        (assign n (reg val))
+                        ; n now contains Fib(n − 2)
+                        (restore val)
+                        ; val now contains Fib(n − 1)
+                        (restore continue)
+                        (assign val ; Fib(n − 1) + Fib(n − 2)
+                                (op +) (reg val) (reg n))
+                        (goto (reg continue))
+                        ; return to caller, answer is in
+                        val
+                        immediate-answer
+                        (assign val (reg n))
+                        ; base case: Fib(n) = n
+                        (goto (reg continue))
+                        fib-done)))
