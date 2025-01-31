@@ -72,7 +72,8 @@
         (flag (make-register 'flag))
         (stack (make-stack))
         (the-instruction-sequence '())
-        (inst-count 0))
+        (inst-count 0)
+        (tracing false))
     (let ((the-ops
            (list (list 'initialize-stack
                        (lambda () (stack 'initialize)))
@@ -97,12 +98,17 @@
           (if (null? insts)
               'done
               (begin
+                (if tracing
+                    (begin (display (instruction-text (car insts)))
+                           (newline)))
                 ((instruction-execution-proc (car insts)))
                 (set! inst-count (+ inst-count 1))
                 (execute)))))
       (define (print-inst-statistics)
-        (display (list 'isnt-executed inst-count)))
+        (display (list 'inst-executed inst-count)))
       (define (reset-inst-statistics) (set! inst-count 0))
+      (define (trace-on) (set! tracing true))
+      (define (trace-off) (set! tracing false))
       (define (dispatch message)
         (cond ((eq? message 'start)
                (set-contents! pc the-instruction-sequence)
@@ -121,6 +127,8 @@
               ((eq? message 'operations) the-ops)
               ((eq? message 'print-inst-statistics) print-inst-statistics)
               ((eq? message 'reset-inst-statistics) reset-inst-statistics)
+              ((eq? message 'trace-on) trace-on)
+              ((eq? message 'trace-off) trace-off)
               (else (error "Unknown request: MACHINE"
                            message))))
       dispatch)))
@@ -359,9 +367,17 @@
 (define (reset-inst-statistics machine)
   ((machine 'rest-inst-statistics)))
 
+(define (trace-on machine)
+  ((machine 'trace-on)))
+
+(define (trace-off machine)
+  ((machine 'trace-off)))
+
 (#%provide make-machine
            start
            set-register-contents!
            get-register-contents
            print-inst-statistics
-           reset-inst-statistics)
+           reset-inst-statistics
+           trace-on
+           trace-off)
