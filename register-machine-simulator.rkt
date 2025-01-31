@@ -53,7 +53,8 @@
     (define (print-statistics)
       (newline)
       (display (list 'total-pushes '= number-pushes
-                     'maximum-depth '= max-depth)))
+                     'maximum-depth '= max-depth))
+      (newline))
     (define (dispatch message)
       (cond ((eq? message 'push) push)
             ((eq? message 'pop) (pop))
@@ -344,3 +345,8 @@
         (cadr val)
         (error "Unknown operation: ASSEMBLE"
                symbol))))
+
+(#%provide make-machine
+           start
+           set-register-contents!
+           get-register-contents)

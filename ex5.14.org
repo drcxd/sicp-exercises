@@ -1,0 +1,39 @@
+#+title: Exercise 5.14
+
+The output of the program:
+
+#+begin_example
+  1
+
+  (total-pushes = 0 maximum-depth = 0)
+  2
+
+  (total-pushes = 2 maximum-depth = 2)
+  3
+
+  (total-pushes = 4 maximum-depth = 4)
+  4
+
+  (total-pushes = 6 maximum-depth = 6)
+  5
+
+  (total-pushes = 8 maximum-depth = 8)
+  6
+
+  (total-pushes = 10 maximum-depth = 10)
+  7
+
+  (total-pushes = 12 maximum-depth = 12)
+  8
+
+  (total-pushes = 14 maximum-depth = 14)
+  9
+
+  (total-pushes = 16 maximum-depth = 16)
+  10
+
+  (total-pushes = 18 maximum-depth = 18)
+#+end_example
+
+Obviously, the number of pushes and the maximum depth both equal to
+\((n - 1) * 2\), \(n\) is the input value.
