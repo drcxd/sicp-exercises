@@ -73,7 +73,8 @@
         (stack (make-stack))
         (the-instruction-sequence '())
         (inst-count 0)
-        (tracing false))
+        (tracing false)
+        (labels '()))
     (let ((the-ops
            (list (list 'initialize-stack
                        (lambda () (stack 'initialize)))
@@ -99,8 +100,17 @@
               'done
               (begin
                 (if tracing
-                    (begin (display (instruction-text (car insts)))
-                           (newline)))
+                    (begin
+                      (map (lambda (label)
+                             (let ((name (car label))
+                                   (label-insts (cdr label)))
+                               (if (eq? insts label-insts)
+                                   (begin
+                                     (display name)
+                                     (newline)))))
+                           labels)
+                      (display (instruction-text (car insts)))
+                      (newline)))
                 ((instruction-execution-proc (car insts)))
                 (set! inst-count (+ inst-count 1))
                 (execute)))))
@@ -109,6 +119,7 @@
       (define (reset-inst-statistics) (set! inst-count 0))
       (define (trace-on) (set! tracing true))
       (define (trace-off) (set! tracing false))
+      (define (store-labels new-labels) (set! labels new-labels))
       (define (dispatch message)
         (cond ((eq? message 'start)
                (set-contents! pc the-instruction-sequence)
@@ -129,6 +140,7 @@
               ((eq? message 'reset-inst-statistics) reset-inst-statistics)
               ((eq? message 'trace-on) trace-on)
               ((eq? message 'trace-off) trace-off)
+              ((eq? message 'store-labels) store-labels)
               (else (error "Unknown request: MACHINE"
                            message))))
       dispatch)))
@@ -149,6 +161,7 @@
    controller-text
    (lambda (insts labels)
      (update-insts! insts labels machine)
+     ((machine 'store-labels) labels)
      insts)))
 
 (define (extract-labels text receive)
