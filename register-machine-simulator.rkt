@@ -71,7 +71,8 @@
   (let ((pc (make-register 'pc))
         (flag (make-register 'flag))
         (stack (make-stack))
-        (the-instruction-sequence '()))
+        (the-instruction-sequence '())
+        (inst-count 0))
     (let ((the-ops
            (list (list 'initialize-stack
                        (lambda () (stack 'initialize)))
@@ -97,7 +98,11 @@
               'done
               (begin
                 ((instruction-execution-proc (car insts)))
+                (set! inst-count (+ inst-count 1))
                 (execute)))))
+      (define (print-inst-statistics)
+        (display (list 'isnt-executed inst-count)))
+      (define (reset-inst-statistics) (set! inst-count 0))
       (define (dispatch message)
         (cond ((eq? message 'start)
                (set-contents! pc the-instruction-sequence)
@@ -114,6 +119,8 @@
                  (set! the-ops (append the-ops ops))))
               ((eq? message 'stack) stack)
               ((eq? message 'operations) the-ops)
+              ((eq? message 'print-inst-statistics) print-inst-statistics)
+              ((eq? message 'reset-inst-statistics) reset-inst-statistics)
               (else (error "Unknown request: MACHINE"
                            message))))
       dispatch)))
@@ -346,7 +353,15 @@
         (error "Unknown operation: ASSEMBLE"
                symbol))))
 
+(define (print-inst-statistics machine)
+  ((machine 'print-inst-statistics)))
+
+(define (reset-inst-statistics machine)
+  ((machine 'rest-inst-statistics)))
+
 (#%provide make-machine
            start
            set-register-contents!
-           get-register-contents)
+           get-register-contents
+           print-inst-statistics
+           reset-inst-statistics)
