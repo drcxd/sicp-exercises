@@ -108,33 +108,47 @@
           (if val
               (cadr val)
               (error "Unknown register:" name))))
-      (define (execute)
+      (define (execute ignore-break)
         (let ((insts (get-contents pc)))
           (if (null? insts)
               'done
-              (begin
-                (if tracing
+              (let ((inst (car insts)))
+                (if (or (not (instruction-break? inst))
+                        ignore-break)
                     (begin
-                      (map (lambda (label)
-                             (let ((name (car label))
-                                   (label-insts (cdr label)))
-                               (if (eq? insts label-insts)
-                                   (display-line name))))
-                           labels)
-                      (display-line (instruction-text (car insts)))))
-                ((instruction-execution-proc (car insts)))
-                (set! inst-count (+ inst-count 1))
-                (execute)))))
+                      (if tracing
+                          (begin
+                            (map (lambda (label)
+                                   (let ((name (car label))
+                                         (label-insts (cdr label)))
+                                     (if (eq? insts label-insts)
+                                         (display-line name))))
+                                 labels)
+                            (display-line (instruction-text inst))))
+                      ((instruction-execution-proc inst))
+                      (set! inst-count (+ inst-count 1))
+                      (execute false))
+                    (display-line
+                     (list 'breaking (instruction-break-info inst))))))))
       (define (print-inst-statistics)
         (display-line (list 'inst-executed inst-count)))
       (define (reset-inst-statistics) (set! inst-count 0))
       (define (trace-on) (set! tracing true))
       (define (trace-off) (set! tracing false))
       (define (store-labels new-labels) (set! labels new-labels))
+      (define (set-breakpoint label n break)
+        (let ((insts (lookup-label labels label)))
+          (let ((inst (list-ref insts (- n 1))))
+            (instruction-set-break inst (if break (cons label n) '())))))
+      (define (cancel-all-breakpoints)
+        (map (lambda (inst)
+               (instruction-set-break inst '()))
+             the-instruction-sequence))
       (define (dispatch message)
         (cond ((eq? message 'start)
                (set-contents! pc the-instruction-sequence)
-               (execute))
+               (execute false))
+              ((eq? message 'proceed) (execute true))
               ((eq? message 'install-instruction-sequence)
                (lambda (seq)
                  (set! the-instruction-sequence seq)))
@@ -160,6 +174,8 @@
                (lambda (name)
                  (let ((reg (lookup-register name)))
                    ((reg 'trace-off)))))
+              ((eq? message 'set-breakpoint) set-breakpoint)
+              ((eq? message 'cancel-all-breakpoints) cancel-all-breakpoints)
               (else (error "Unknown request: MACHINE"
                            message))))
       dispatch)))
@@ -216,11 +232,16 @@
          labels machine pc flag stack ops)))
      insts)))
 
-(define (make-instruction text) (cons text '()))
+(define (make-instruction text) (list text '() '()))
 (define (instruction-text inst) (car inst))
-(define (instruction-execution-proc inst) (cdr inst))
+(define (instruction-execution-proc inst) (cadr inst))
+(define (instruction-break-info inst) (caddr inst))
+(define (instruction-break? inst)
+  (not (null? (instruction-break-info inst))))
+(define (instruction-set-break inst new-break)
+  (set-car! (cddr inst) new-break))
 (define (set-instruction-execution-proc! inst proc)
-  (set-cdr! inst proc))
+  (set-car! (cdr inst) proc))
 
 (define (make-label-entry label-name insts)
   (cons label-name insts))
@@ -411,6 +432,18 @@
 (define (register-trace-off machine reg-name)
   ((machine 'register-trace-off) reg-name))
 
+(define (set-breakpoint machine label n)
+  ((machine 'set-breakpoint) label n true))
+
+(define (proceed-machine machine)
+  (machine 'proceed))
+
+(define (cancel-breakpoint machine label n)
+  ((machine 'set-breakpoint) label n false))
+
+(define (cancel-all-breakpoints machine)
+  (machine 'cancel-all-breakpoints))
+
 (#%provide make-machine
            start
            set-register-contents!
@@ -420,4 +453,8 @@
            trace-on
            trace-off
            register-trace-on
-           register-trace-off)
+           register-trace-off
+           set-breakpoint
+           proceed-machine
+           cancel-breakpoint
+           cancel-all-breakpoints)
