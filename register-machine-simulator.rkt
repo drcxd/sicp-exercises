@@ -1,6 +1,7 @@
 #lang sicp
 
 (#%require "./tagged-list.rkt")
+(#%require "./display-line.rkt")
 
 (define (make-machine register-names ops controller-text)
   (let ((machine (make-new-machine)))
@@ -13,18 +14,32 @@
      (assemble controller-text machine))
     machine))
 
-(define (make-register name)
-  (let ((contents '*unassigned*))
+(define (make-register new-name)
+  (let ((name new-name)
+        (contents '*unassigned*)
+        (tracing false))
     (define (dispatch message)
       (cond ((eq? message 'get) contents)
             ((eq? message 'set)
              (lambda (value) (set! contents value)))
+            ((eq? message 'trace-on)
+             (lambda () (set! tracing true)))
+            ((eq? message 'trace-off)
+             (lambda () (set! tracing false)))
+            ((eq? message 'tracing?) tracing)
+            ((eq? message 'get-name) name)
             (else
              (error "Unknown request: REGISTER" message))))
     dispatch))
 
 (define (get-contents register) (register 'get))
 (define (set-contents! register value)
+  (if (register 'tracing?)
+      (let ((old-value (register 'get))
+            (name (register 'get-name)))
+        (display-line (list 'assigning name
+                       'old-value old-value
+                       'new-value value))))
   ((register 'set) value))
 
 (define (make-stack)
@@ -52,9 +67,8 @@
       'done)
     (define (print-statistics)
       (newline)
-      (display (list 'total-pushes '= number-pushes
-                     'maximum-depth '= max-depth))
-      (newline))
+      (display-line (list 'total-pushes '= number-pushes
+                          'maximum-depth '= max-depth)))
     (define (dispatch message)
       (cond ((eq? message 'push) push)
             ((eq? message 'pop) (pop))
@@ -105,17 +119,14 @@
                              (let ((name (car label))
                                    (label-insts (cdr label)))
                                (if (eq? insts label-insts)
-                                   (begin
-                                     (display name)
-                                     (newline)))))
+                                   (display-line name))))
                            labels)
-                      (display (instruction-text (car insts)))
-                      (newline)))
+                      (display-line (instruction-text (car insts)))))
                 ((instruction-execution-proc (car insts)))
                 (set! inst-count (+ inst-count 1))
                 (execute)))))
       (define (print-inst-statistics)
-        (display (list 'inst-executed inst-count)))
+        (display-line (list 'inst-executed inst-count)))
       (define (reset-inst-statistics) (set! inst-count 0))
       (define (trace-on) (set! tracing true))
       (define (trace-off) (set! tracing false))
@@ -141,6 +152,14 @@
               ((eq? message 'trace-on) trace-on)
               ((eq? message 'trace-off) trace-off)
               ((eq? message 'store-labels) store-labels)
+              ((eq? message 'register-trace-on)
+               (lambda (name)
+                 (let ((reg (lookup-register name)))
+                   ((reg 'trace-on)))))
+              ((eq? message 'register-trace-off)
+               (lambda (name)
+                 (let ((reg (lookup-register name)))
+                   ((reg 'trace-off)))))
               (else (error "Unknown request: MACHINE"
                            message))))
       dispatch)))
@@ -386,6 +405,12 @@
 (define (trace-off machine)
   ((machine 'trace-off)))
 
+(define (register-trace-on machine reg-name)
+  ((machine 'register-trace-on) reg-name))
+
+(define (register-trace-off machine reg-name)
+  ((machine 'register-trace-off) reg-name))
+
 (#%provide make-machine
            start
            set-register-contents!
@@ -393,4 +418,6 @@
            print-inst-statistics
            reset-inst-statistics
            trace-on
-           trace-off)
+           trace-off
+           register-trace-on
+           register-trace-off)
