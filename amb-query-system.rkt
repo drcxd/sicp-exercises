@@ -4,6 +4,7 @@
 
 (#%require "./table.rkt")
 (#%require "./tagged-list.rkt")
+(#%require "./display-line.rkt")
 
 (define query-system-table (make-table))
 (define (get . keys)
@@ -78,10 +79,6 @@
 (define (announce-output string)
   (newline)
   (display string)
-  (newline))
-
-(define (display-line object)
-  (display object)
   (newline))
 
 ;; The evaluator

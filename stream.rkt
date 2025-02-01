@@ -1,5 +1,7 @@
 #lang sicp
 
+(#%require "./display-line.rkt")
+
 (#%provide stream-car
            stream-cdr
            stream-map
@@ -53,10 +55,6 @@
          (cons-stream (stream-car stream)
                       (stream-filter pred (stream-cdr stream))))
         (else (stream-filter pred (stream-cdr stream)))))
-
-(define (display-line s)
-  (display s)
-  (newline))
 
 (define (display-stream s)
   (stream-for-each display-line s))
