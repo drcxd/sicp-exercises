@@ -1,7 +1,7 @@
 #lang sicp
 
 (#%require "./tagged-list.rkt")
-(#%require "./display-line.rkt")
+(#%require "./io.rkt")
 
 (define (make-machine register-names ops controller-text)
   (let ((machine (make-new-machine)))

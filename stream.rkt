@@ -1,6 +1,6 @@
 #lang sicp
 
-(#%require "./display-line.rkt")
+(#%require "./io.rkt")
 
 (#%provide stream-car
            stream-cdr

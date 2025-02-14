@@ -1,6 +1,6 @@
 #lang sicp
 
-(#%require "./prompt-for-input.rkt")
+(#%require "./io.rkt")
 (#%require "./table.rkt")
 (#%require "./stream.rkt")
 (#%require "./tagged-list.rkt")

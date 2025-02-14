@@ -4,7 +4,7 @@
 
 (#%require "./table.rkt")
 (#%require "./tagged-list.rkt")
-(#%require "./display-line.rkt")
+(#%require "./io.rkt")
 
 (define query-system-table (make-table))
 (define (get . keys)
@@ -69,17 +69,6 @@
            (cons (copy (car exp)) (copy (cdr exp))))
           (else exp)))
   (copy exp))
-
-(define (prompt-for-input string)
-  (newline)
-  (newline)
-  (display string)
-  (newline))
-
-(define (announce-output string)
-  (newline)
-  (display string)
-  (newline))
 
 ;; The evaluator
 
