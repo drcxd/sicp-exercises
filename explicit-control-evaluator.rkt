@@ -3,9 +3,33 @@
 (#%require "./register-machine-simulator.rkt")
 (#%require "./metacircular-evaluator-syntax.rkt")
 (#%require "./metacircular-evaluator-env.rkt")
+(#%require "./io.rkt")
+
+(define (get-global-environment) the-global-environment)
+
+(define (user-print object)
+  (if (compound-procedure? object)
+      (display (list 'compound-procedure
+                     (procedure-parameters object)
+                     (procedure-body object)
+                     '<procedure-env>))
+      (display object)))
 
 (define controller
-  '(eval-dispatch
+  '(read-eval-print-loop
+    (perform (op initialize-stack))
+    (perform
+     (op prompt-for-input) (const ";;EC-Eval input:"))
+    (assign exp (op read))
+    (assign env (op get-global-environment))
+    (assign continue (label print-result))
+    (goto (label eval-dispatch))
+    print-result
+    (perform (op announce-output) (const ";;EC-Eval value:"))
+    (perform (op user-print) (reg val))
+    (goto (label read-eval-print-loop))
+
+    eval-dispatch
     (test (op self-evaluating?) (reg exp))
     (branch (label ev-self-eval))
     (test (op variable?) (reg exp))
@@ -184,65 +208,87 @@
      (op define-variable!) (reg unev) (reg val) (reg env))
     (assign val (const ok))
     (goto (reg continue))
+
+    unknown-expression-type
+    (assign val (const unknown-expression-type-error))
+    (goto (label signal-error))
+    unknown-procedure-type
+    (restore continue) ; clean up stack (from apply-dispatch)
+    (assign val (const unknown-procedure-type-error))
+    (goto (label signal-error))
+    signal-error
+    (perform (op user-print) (reg val))
+    (goto (label read-eval-print-loop))
     ))
 
-(define evaluator
+(define eceval-operations
+  (list
+   (list 'self-evaluating? self-evaluating?)
+   (list 'variable? variable?)
+
+   (list 'quoted? quoted?)
+   (list 'text-of-quotation text-of-quotation)
+
+   (list 'assignment? assignment?)
+   (list 'assignment-variable assignment-variable)
+   (list 'assignment-value assignment-value)
+
+   (list 'definition? definition?)
+   (list 'definition-variable definition-variable)
+   (list 'definition-value definition-value)
+
+   (list 'if? if?)
+   (list 'if-predicate if-predicate)
+   (list 'if-alternative if-alternative)
+   (list 'if-consequent if-consequent)
+
+   (list 'lambda? lambda?)
+   (list 'lambda-parameters lambda-parameters)
+   (list 'lambda-body lambda-body)
+
+   (list 'begin? begin?)
+   (list 'begin-actions begin-actions)
+
+   (list 'application? application?)
+   (list 'operator operator)
+   (list 'operands operands)
+   (list 'no-operands? no-operands?)
+   (list 'empty-arglist empty-arglist)
+   (list 'first-operand first-operand)
+   (list 'last-operand? last-operand?)
+   (list 'adjoin-arg adjoin-arg)
+   (list 'rest-operands rest-operands)
+
+   (list 'make-procedure make-procedure)
+   (list 'primitive-procedure? primitive-procedure?)
+   (list 'compound-procedure? compound-procedure?)
+   (list 'procedure-parameters procedure-parameters)
+   (list 'procedure-environment procedure-environment)
+   (list 'procedure-body procedure-body)
+
+   (list 'lookup-variable-value lookup-variable-value)
+   (list 'extend-environment extend-environment)
+   (list 'set-variable-value! set-variable-value!)
+   (list 'define-variable! define-variable!)
+   (list 'get-global-environment get-global-environment)
+
+   (list 'first-exp first-exp)
+   (list 'last-exp? last-exp?)
+   (list 'rest-exps rest-exps)
+
+   (list 'apply-primitive-procedure apply-primitive-procedure)
+
+   (list 'true? true?)
+
+   (list 'prompt-for-input prompt-for-input)
+   (list 'read read)
+   (list 'announce-output announce-output)
+   (list 'user-print user-print)))
+
+(define eceval
   (make-machine
    '(exp env val continue proc argl unev)
-   (list
-    (list 'self-evaluating? self-evaluating?)
-    (list 'variable? variable?)
-
-    (list 'quoted? quoted?)
-    (list 'text-of-quotation text-of-quotation)
-
-    (list 'assignment? assignment?)
-    (list 'assignment-variable assignment-variable)
-    (list 'assignment-value assignment-value)
-
-    (list 'definition? definition?)
-    (list 'definition-variable definition-variable)
-    (list 'definition-value definition-value)
-
-    (list 'if? if?)
-    (list 'if-predicate if-predicate)
-    (list 'if-alternative if-alternative)
-    (list 'if-consequent if-consequent)
-
-    (list 'lambda? lambda?)
-    (list 'lambda-parameters lambda-parameters)
-    (list 'lambda-body lambda-body)
-
-    (list 'begin? begin?)
-    (list 'begin-actions begin-actions)
-
-    (list 'application? application?)
-    (list 'operator operator)
-    (list 'operands operands)
-    (list 'no-operands? no-operands?)
-    (list 'empty-arglist empty-arglist)
-    (list 'first-operand first-operand)
-    (list 'last-operands last-operands?)
-    (list 'adjoin-arg adjoin-arg)
-    (list 'rest-operands rest-operands)
-
-    (list 'make-procedure make-procedure)
-    (list 'primitive-procedure? primitive-procedure?)
-    (list 'compound-procedure? compound-procedure?)
-    (list 'procedure-parameters procedure-parameters)
-    (list 'procedure-environment procedure-environment)
-    (list 'procedure-body procedure-body)
-
-    (list 'lookup-variable-value lookup-variable-value)
-    (list 'extend-environment extend-environment)
-    (list 'set-variable-value! set-variable-value!)
-    (list 'define-variable! define-variable!)
-
-    (list 'first-exp first-exp)
-    (list 'last-exp? last-exp?)
-    (list 'rest-exps rest-exps)
-
-    (list 'apply-primitive-procedure apply-primitive-procedure)
-
-    (list 'true? true?))
+   eceval-operations
    controller))
+
+(start eceval)

@@ -10,7 +10,7 @@
 (define (variable? exp) (symbol? exp))
 
 (define (quoted? exp) (tagged-list? exp 'quote))
-(define (text-of-quotation exp env) (cadr exp))
+(define (text-of-quotation exp) (cadr exp))
 
 (define (assignment? exp) (tagged-list? exp 'set!))
 (define (assignment-variable exp) (cadr exp))
@@ -49,13 +49,14 @@
 (define (operands exp) (cdr exp))
 (define (no-operands? ops) (null? ops))
 (define (empty-arglist) '())
-(define (last-operands? ops) (null? (cdr ops)))
+(define (last-operand? ops) (null? (cdr ops)))
 (define (adjoin-arg arg arglist) (append arglist (list arg)))
 (define (first-operand ops) (car ops))
 (define (rest-operands ops) (cdr ops))
 
 (define (primitive-procedure? proc)
   (tagged-list? proc 'primitive))
+(define (primitive-implementation proc) (cadr proc))
 (define (compound-procedure? p)
   (tagged-list? p 'procedure))
 (define (make-procedure parameters body env)
@@ -69,7 +70,7 @@
 (define (rest-exps seq) (cdr seq))
 
 (define (apply-primitive-procedure proc args)
-  (apply proc args))
+  (apply (primitive-implementation proc) args))
 
 (define (true? x) (not (eq? false x)))
 
@@ -106,7 +107,7 @@
  no-operands?
  first-operand
  rest-operands
- last-operands?
+ last-operand?
  empty-arglist
  adjoin-arg
 
