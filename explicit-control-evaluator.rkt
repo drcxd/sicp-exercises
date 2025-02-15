@@ -188,8 +188,35 @@
     (goto (label eval-dispatch))
 
     ev-cond
-    (assign exp (op cond->if) (reg exp))
-    (goto (label ev-if))
+    (assign unev (op cond-clauses) (reg exp))
+    (save continue)
+    (goto (label cond-loop))
+
+    cond-loop
+    (assign exp (op cond-first-clause) (reg unev))
+    (test (op cond-else-clause?) (reg exp))
+    (branch (label cond-else))
+    (save unev)
+    (save exp)
+    (assign exp (op cond-predicate) (reg exp))
+    (assign continue (label cond-test-predicate))
+    (goto (label eval-dispatch))
+
+    cond-test-predicate
+    (restore exp)
+    (restore unev)
+    (test (op true?) (reg val))
+    (branch (label cond-eval-actions))
+    (assign unev (op cond-rest-clauses) (reg unev))
+    (goto (label cond-loop))
+
+    cond-else
+    (assign unev (op cond-actions) (reg exp))
+    (goto (label ev-sequence))
+
+    cond-eval-actions
+    (assign unev (op cond-actions) (reg exp))
+    (goto (label ev-sequence))
 
     ev-assignment
     (assign unev (op assignment-variable) (reg exp))
@@ -268,6 +295,12 @@
 
    (list 'cond? cond?)
    (list 'cond->if cond->if)
+   (list 'cond-clauses cond-clauses)
+   (list 'cond-first-clause cond-first-clause)
+   (list 'cond-else-clause? cond-else-clause?)
+   (list 'cond-rest-clauses cond-rest-clauses)
+   (list 'cond-predicate cond-predicate)
+   (list 'cond-actions cond-actions)
 
    (list 'lambda? lambda?)
    (list 'lambda-parameters lambda-parameters)

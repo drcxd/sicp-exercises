@@ -41,6 +41,8 @@
 
 (define (cond? exp) (tagged-list? exp 'cond))
 (define (cond-clauses exp) (cdr exp))
+(define (cond-first-clause exps) (car exps))
+(define (cond-rest-clauses exps) (cdr exps))
 (define (cond-else-clause? clause)
   (eq? (cond-predicate clause) 'else))
 (define (cond-predicate clause) (car clause))
@@ -191,6 +193,12 @@
 
  cond?
  cond->if
+ cond-clauses
+ cond-first-clause
+ cond-else-clause?
+ cond-rest-clauses
+ cond-predicate
+ cond-actions
 
  lambda?
  lambda-parameters
