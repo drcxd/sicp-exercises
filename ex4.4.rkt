@@ -28,7 +28,7 @@
         (else
          (make-application
           (make-lambda '(first)
-                       (make-if 'first 'first (expand-or-expressions (rest-exps exps))))
+                       (list (make-if 'first 'first (expand-or-expressions (rest-exps exps)))))
           (list (first-exp exps))))))
 
 ;; and is implemented in a similar way
@@ -38,11 +38,9 @@
 
 (define (expand-and-expressions exps)
   (cond ((null? exps) 'true)
-        ((last-exp? exps)
-         (make-application (make-lambda '(exp)
-                                        (make-if 'exp 'exp 'false))
-                           (list (first-exp exps))))
+        ((last-exp? exps) (first-exp exps))
         (else
-         (make-if (first-exp exps)
-                  (expand-and-expressions (rest-exps exps))
-                  'false))))
+         (make-application
+          (make-lambda '(first)
+                       (list (make-if 'first (expand-and-expressions (rest-exps exps)) 'first)))
+          (list (first-exp exps))))))
