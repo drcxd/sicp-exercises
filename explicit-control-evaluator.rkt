@@ -42,10 +42,18 @@
     (branch (label ev-definition))
     (test (op if?) (reg exp))
     (branch (label ev-if))
+    (test (op cond?) (reg exp))
+    (branch (label ev-cond))
     (test (op lambda?) (reg exp))
     (branch (label ev-lambda))
     (test (op begin?) (reg exp))
     (branch (label ev-begin))
+    (test (op let?) (reg exp))
+    (branch (label ev-let))
+    (test (op or?) (reg exp))
+    (branch (label ev-or))
+    (test (op and?) (reg exp))
+    (branch (label ev-and))
     (test (op application?) (reg exp))
     (branch (label ev-application))
     (goto (label unknown-expression-type))
@@ -132,6 +140,10 @@
     (assign unev (op procedure-body) (reg proc))
     (goto (label ev-sequence))
 
+    ev-let
+    (assign exp (op let->combination) (reg exp))
+    (goto (label ev-application))
+
     ev-begin
     (assign unev (op begin-actions) (reg exp))
     (save continue)
@@ -175,6 +187,10 @@
     (assign exp (op if-consequent) (reg exp))
     (goto (label eval-dispatch))
 
+    ev-cond
+    (assign exp (op cond->if) (reg exp))
+    (goto (label ev-if))
+
     ev-assignment
     (assign unev (op assignment-variable) (reg exp))
     (save unev) ; save variable for later
@@ -209,6 +225,14 @@
     (assign val (const ok))
     (goto (reg continue))
 
+    ev-or
+    (assign exp (op or->application) (reg exp))
+    (goto (label eval-dispatch))
+
+    ev-and
+    (assign exp (op and->application) (reg exp))
+    (goto (label eval-dispatch))
+
     unknown-expression-type
     (assign val (const unknown-expression-type-error))
     (goto (label signal-error))
@@ -242,6 +266,9 @@
    (list 'if-alternative if-alternative)
    (list 'if-consequent if-consequent)
 
+   (list 'cond? cond?)
+   (list 'cond->if cond->if)
+
    (list 'lambda? lambda?)
    (list 'lambda-parameters lambda-parameters)
    (list 'lambda-body lambda-body)
@@ -258,6 +285,9 @@
    (list 'last-operand? last-operand?)
    (list 'adjoin-arg adjoin-arg)
    (list 'rest-operands rest-operands)
+
+   (list 'let? let?)
+   (list 'let->combination let->combination)
 
    (list 'make-procedure make-procedure)
    (list 'primitive-procedure? primitive-procedure?)
@@ -279,6 +309,12 @@
    (list 'apply-primitive-procedure apply-primitive-procedure)
 
    (list 'true? true?)
+
+   (list 'or? or?)
+   (list 'or->application or->application)
+
+   (list 'and? and?)
+   (list 'and->application and->application)
 
    (list 'prompt-for-input prompt-for-input)
    (list 'read read)
