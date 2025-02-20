@@ -169,6 +169,15 @@
                        (list (make-if 'first (expand-and-expressions (rest-exps exps)) 'first)))
           (list (first-exp exps))))))
 
+(define (thunk? exp)
+  (tagged-list? exp 'thunk))
+(define (delay-it exp env)
+  (list 'thunk exp env))
+(define (thunk-exp thunk)
+  (cadr thunk))
+(define (thunk-env thunk)
+  (caddr thunk))
+
 (#%provide
  self-evaluating?
  variable?
@@ -230,4 +239,9 @@
  or?
  or->application
  and?
- and->application)
+ and->application
+
+ thunk?
+ delay-it
+ thunk-exp
+ thunk-env)

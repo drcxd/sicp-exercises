@@ -80,43 +80,40 @@
     (save unev)
     (assign exp (op operator) (reg exp))
     (assign continue (label ev-appl-did-operator))
-    (goto (label eval-dispatch))
+    (goto (label ev-actual-value))
 
     ev-appl-did-operator
     (restore unev) ; the operands
     (restore env)
     (assign argl (op empty-arglist))
     (assign proc (reg val)) ; the operator
-    (test (op no-operands?) (reg unev))
-    (branch (label apply-dispatch))
-    (save proc)
 
     ev-appl-operand-loop
-    (save argl)
+    (test (op no-operands?) (reg unev))
+    (branch (label apply-dispatch))
     (assign exp (op first-operand) (reg unev))
-    (test (op last-operand?) (reg unev))
-    (branch (label ev-appl-last-arg))
-    (save env)
-    (save unev)
-    (assign continue (label ev-appl-accumulate-arg))
-    (goto (label eval-dispatch))
-
-    ev-appl-accumulate-arg
-    (restore unev)
-    (restore env)
-    (restore argl)
-    (assign argl (op adjoin-arg) (reg val) (reg argl))
+    (test (op primitive-procedure?) (reg proc))
+    (branch (label ev-appl-operand-loop-actual-value))
+    (assign exp (op delay-it) (reg exp) (reg env))
+    ev-appl-operand-loop-adjoin-arg
+    (assign argl (op adjoin-arg) (reg exp) (reg argl))
     (assign unev (op rest-operands) (reg unev))
     (goto (label ev-appl-operand-loop))
 
-    ev-appl-last-arg
-    (assign continue (label ev-appl-accum-last-arg))
-    (goto (label eval-dispatch))
-    ev-appl-accum-last-arg
+    ev-appl-operand-loop-actual-value
+    (save proc)
+    (save argl)
+    (save unev)
+    (save env)
+    (assign continue (label ev-appl-operand-loop-actual-value-done))
+    (goto (label ev-actual-value))
+
+    ev-appl-operand-loop-actual-value-done
+    (restore env)
+    (restore unev)
     (restore argl)
-    (assign argl (op adjoin-arg) (reg val) (reg argl))
     (restore proc)
-    (goto (label apply-dispatch))
+    (goto (label ev-appl-operand-loop-adjoin-arg))
 
     apply-dispatch
     (test (op primitive-procedure?) (reg proc))
@@ -172,7 +169,7 @@
     (save continue)
     (assign continue (label ev-if-decide))
     (assign exp (op if-predicate) (reg exp))
-    (goto (label eval-dispatch)) ; evaluate the predicate
+    (goto (label ev-actual-value)) ; evaluate the predicate
 
     ev-if-decide
     (restore continue)
@@ -232,6 +229,27 @@
     ev-and
     (assign exp (op and->application) (reg exp))
     (goto (label eval-dispatch))
+
+    ev-actual-value
+    (save continue)
+    (assign continue (label ev-actual-value-did-eval))
+    (goto (label eval-dispatch))
+
+    ev-actual-value-did-eval
+    (restore continue)
+    (assign exp (reg val))
+    (goto (label ev-force-it))
+
+    ev-force-it
+    (test (op thunk?) (reg exp))
+    (branch (label ev-force-it-thunk))
+    (assign val (reg exp))
+    (goto (reg continue))
+
+    ev-force-it-thunk
+    (assign env (op thunk-env) (reg exp))
+    (assign exp (op thunk-exp) (reg exp))
+    (goto (label ev-actual-value))
 
     unknown-expression-type
     (assign val (const unknown-expression-type-error))
@@ -315,6 +333,11 @@
 
    (list 'and? and?)
    (list 'and->application and->application)
+
+   (list 'thunk? thunk?)
+   (list 'delay-it delay-it)
+   (list 'thunk-exp thunk-exp)
+   (list 'thunk-env thunk-env)
 
    (list 'prompt-for-input prompt-for-input)
    (list 'read read)

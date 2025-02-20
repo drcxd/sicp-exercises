@@ -1,0 +1,16 @@
+#+title: Exercise 5.25
+
+This exercise involves implementing the normal order evaluator in the
+explicit control evaluator. Basically, what I have done is to
+implement the code presented in section 4.2.2 of the book.
+
+To be more specific, the procedures involve the syntax about thunks:
+~delay-it~, ~thunk?~, ~thunk-exp~ and ~thunk-env~ are implemented as Scheme
+procedures, like other syntax procedures.
+
+Procedures ~actual-value~, ~force-it~ are implemented using the machine
+instructions. Other modifications to the evaluator are also embedded
+in the evaluator itself. Most of them are about the procedures
+application.
+
+Note that I have not implemented the memorization of thunks.
