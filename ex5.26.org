@@ -1,0 +1,16 @@
+#+title: Exercise 5.26
+
+* a
+
+The maximum depth is 10.
+
+* b
+
+| n | total pushes |
+| 1 |           64 |
+| 2 |           99 |
+| 3 |          134 |
+| 4 |          169 |
+| 5 |          204 |
+
+Obviously, total pushes is =64 + 35 * (n - 1)=.
