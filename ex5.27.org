@@ -1,0 +1,17 @@
+#+title: Exercise 5.27
+
+| n | total pushes | maximum depth |
+| 1 |           16 |             8 |
+| 2 |           48 |            13 |
+| 3 |           80 |            18 |
+| 4 |          112 |            23 |
+| 5 |          144 |            28 |
+| 6 |          176 |            33 |
+
+Total pushes is =16 + (n - 1) * 32=.
+
+Maximum depth is =8 + (n - 1) * 5=.
+
+|                    | Maximum depth   | Number of pushes  |
+| Recursive function | 8 + 5 * (n - 1) | 16 + 32 * (n - 1) |
+| Iterative function | 10              | 64 + 35 * (n - 1) |
