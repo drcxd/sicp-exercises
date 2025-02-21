@@ -63,6 +63,8 @@
     (goto (reg continue))
     ev-variable
     (assign val (op lookup-variable-value) (reg exp) (reg env))
+    (test (op unbound-var?) (reg val))
+    (branch (label unbound-variable))
     (goto (reg continue))
     ev-quoted
     (assign val (op text-of-quotation) (reg exp))
@@ -129,6 +131,8 @@
     (assign val (op apply-primitive-procedure)
             (reg proc)
             (reg argl))
+    (test (op primitive-error?) (reg val))
+    (branch (label signal-error))
     (restore continue)
     (goto (reg continue))
 
@@ -203,8 +207,10 @@
     (restore continue)
     (restore env)
     (restore unev)
-    (perform
-     (op set-variable-value!) (reg unev) (reg val) (reg env))
+    (assign val (op set-variable-value!) (reg unev) (reg val) (reg env))
+    (assign exp (reg unev))
+    (test (op unbound-var?) (reg val))
+    (branch (label unbound-variable))
     (assign val (const ok))
     (goto (reg continue))
 
@@ -239,6 +245,10 @@
     unknown-procedure-type
     (restore continue) ; clean up stack (from apply-dispatch)
     (assign val (const unknown-procedure-type-error))
+    (goto (label signal-error))
+    unbound-variable
+    (assign val (const (unbound-variable)))
+    (assign val (op adjoin-arg) (reg exp) (reg val))
     (goto (label signal-error))
     signal-error
     (perform (op user-print) (reg val))
@@ -301,6 +311,7 @@
    (list 'set-variable-value! set-variable-value!)
    (list 'define-variable! define-variable!)
    (list 'get-global-environment get-global-environment)
+   (list 'unbound-var? unbound-var?)
 
    (list 'first-exp first-exp)
    (list 'last-exp? last-exp?)
@@ -315,6 +326,8 @@
 
    (list 'and? and?)
    (list 'and->application and->application)
+
+   (list 'primitive-error? primitive-error?)
 
    (list 'prompt-for-input prompt-for-input)
    (list 'read read)

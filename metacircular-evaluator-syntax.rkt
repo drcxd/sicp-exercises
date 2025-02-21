@@ -169,6 +169,9 @@
                        (list (make-if 'first (expand-and-expressions (rest-exps exps)) 'first)))
           (list (first-exp exps))))))
 
+(define (primitive-error? exp)
+  (tagged-list? exp 'perror))
+
 (#%provide
  self-evaluating?
  variable?
@@ -230,4 +233,6 @@
  or?
  or->application
  and?
- and->application)
+ and->application
+
+ primitive-error?)

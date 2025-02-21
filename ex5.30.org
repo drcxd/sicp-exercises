@@ -1,0 +1,23 @@
+#+title: Exercise 5.30
+
+* a
+
+I do not understand why the text says that "This is lots of
+work". What we need to do is to check the return value of
+~lookup-variable-value~ and if it is the special value, then we jump to
+~signal-error~, we only need to modify the code under the label
+~ev-variable~. Why this is lots of work?
+
+Maybe the text only uses ~lookup-variable-value~ as an example, and
+there are other kinds of operations that can be handled similarly? For
+example, assignment does not return any value. To detect errors
+occurred during assignment, the procedures ~set-variable-value!~ must
+return a value to indicate errors.
+
+Should we consider malformed input, such as ~(if)~ and ~(lambda)~?  This
+requires test and return special value for almost all the syntax
+procedures.
+
+* b
+
+Only implemented error check for ~car~ as an example.

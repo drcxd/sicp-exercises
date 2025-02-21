@@ -3,7 +3,10 @@
 (#%require "./filter.rkt")
 
 (define primitive-procedures
-  (list (list 'car car)
+  (list (list 'car (lambda (p)
+                     (if (pair? p)
+                         (car p)
+                         (append '(perror: car expects a pair but got) (list p)))))
         (list 'cdr cdr)
         (list 'cons cons)
         (list 'null? null?)
@@ -11,6 +14,8 @@
         (list '- -)
         (list '* *)
         (list '= =)
+        (list '> >)
+        (list '< <)
         (list '/ /)))
 
 (define (primitive-procedure-names)
@@ -52,7 +57,8 @@
             ((eq? var (caar var-list)) (cdar var-list))
             (else (scan (cdr var-list)))))
     (if (eq? env the-empty-environment)
-        (error "Unbound variable" var)
+        ;; (error "Unbound variable" var)
+        '*unbound*
         (let ((frame (first-frame env)))
           (scan (cdr frame)))))
   ;; Exercise 4.16 a
@@ -69,7 +75,8 @@
             ((eq? var (caar var-list)) (set-cdr! (car var-list) val))
             (else (scan (cdr var-list)))))
     (if (eq? env the-empty-environment)
-        (error "Unbound variable: SET!" var)
+        ;; (error "Unbound variable: SET!" var)
+        '*unbound*
         (let ((frame (first-frame env)))
           (scan (cdr frame)))))
   (env-loop env))
@@ -147,7 +154,11 @@
   (let ((frame (first-frame env)))
     (set-car! env (filter (lambda (binding) (not (eq? var (car binding)))) frame))))
 
+(define (unbound-var? v)
+  (eq? v '*unbound*))
+
 ;; -- end environment
+
 
 (#%provide
  extend-environment
@@ -155,4 +166,5 @@
  set-variable-value!
  define-variable!
  remove-from-env!
- the-global-environment)
+ the-global-environment
+ unbound-var?)
