@@ -1,0 +1,14 @@
+#+title: Exercise 5.32
+
+* a
+
+See =explicit-control-evaluator.rkt=.
+
+* b
+
+Alyssa's idea is true for the execution of single
+instruction. However, a compiler can analyze a sequence of multiple
+instructions and make optimizations specific to this specific sequence
+of multiple instructions. A evaluator can not do such optimization
+because when executing an instruction, it may have no knowledge about
+the next instruction.
