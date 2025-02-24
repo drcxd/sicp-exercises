@@ -1,0 +1,34 @@
+#+title: Exercise 5.31
+
+| Process                     | Save/Restore Registers |
+| Operator                    | env                    |
+| Each operand (but the last) | env                    |
+| Each operand                | argl                   |
+| Operands                    | proc                   |
+
+
+For ~(f 'x 'y)~, save and restore ~env~ when evaluating operator is
+superfluous, since its evaluation is a simple lookup from the
+environment. Save and restore ~env~ for each but the last operand is
+also superfluous, because all operands are quoted text. Save and
+restore ~argl~ for each operand is also superfluous, for the same
+reason. Save and restore ~proc~ is also superfluous, since all operands
+are quoted text whose evaluation do not involve evaluating another
+procedure.
+
+For ~((f) 'x 'y)~, save and restore ~env~ when evaluating operator is not
+superfluous, since evaluating operator involves evaluating another
+procedure which creates a new frame in the environment. All the other
+save and restore is superfluous for the same reason as above.
+
+For ~(f (g 'x) y)~, save and restore ~env~ when evaluating operator is
+superfluous. Save and restore ~env~ when evaluating ~(g 'x)~ is not
+superfluous, since it involves creating a new frame. When evaluating
+~(g 'x)~, all save and restore is superfluous. Back to ~(f (g 'x) y)~,
+save and restore ~argl~ for ~(g 'x)~ is not superfluous, because
+evaluating ~(g 'x)~ is evaluating another procedure application, which
+uses this register. Save and restore ~argl~ for the last operand ~y~ is
+superfluous. Save and restore ~proc~ is not superfluous, since
+evaluating ~(g 'x)~ also uses this register.
+
+~(f (g 'x) 'y)~ is the same as ~(f (g 'x) y)~.
