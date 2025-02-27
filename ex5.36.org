@@ -1,0 +1,11 @@
+#+title: Exercise 5.36
+
+The order of evaluation for operands of combination produced by the compiler is right-to-left. The order is determined by the code in the procedure ~construct-arglist~.
+
+#+begin_quote
+How does changing the order of operand evaluation affect the efficiency of the code that constructs the argument list?
+#+end_quote
+
+Our modified implementation of the compiler produces left-to-right evaluation of operands of applications. It works by generating the compiled code of the operands from left to right and ~cons~ values of operands into ~argl~. As a result, the list pointed by ~argl~ holds the value of operands in the right-to-left order, though the operands are evaluated in the left-to-right order. To accommodate this change, we also modified the implementation of ~compile-lambda-body~, which reverses the parameter list so that each operand name matches the correct argument value again.
+
+Our modification does not affect the efficiency of the generated code that constructs the argument list, since it only changes the order of the generated code. The modification does affect the efficiency of the compiler, though. It moves the call to ~reverse~ from ~construct-arglist~ to ~compile-lambda-body~. If a lambda is called multiple times, then ~construct-arglist~ will be called multiple times, but ~compile-lambda-body~ will only be called once no matter how many times the lambda is called. Thus, our modification reduces the number of calls to ~reverse~, which increases the efficiency of the compiler.
