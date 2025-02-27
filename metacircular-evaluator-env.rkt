@@ -134,6 +134,7 @@
     initial-env))
 
 (define the-global-environment (setup-environment))
+(define (get-global-environment) the-global-environment)
 
 ;; Exercise 4.13
 
@@ -155,4 +156,5 @@
  set-variable-value!
  define-variable!
  remove-from-env!
- the-global-environment)
+ the-global-environment
+ get-global-environment)

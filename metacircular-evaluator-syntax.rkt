@@ -132,6 +132,13 @@
 (define (procedure-body p) (caddr p))
 (define (procedure-environment p) (cadddr p))
 
+(define (make-compiled-procedure entry env)
+  (list 'compiled-procedure entry env))
+(define (compiled-procedure? proc)
+  (tagged-list? proc 'compiled-procedure))
+(define (compiled-procedure-entry c-proc) (cadr c-proc))
+(define (compiled-procedure-env c-proc) (caddr c-proc))
+
 (define (last-exp? seq) (null? (cdr seq)))
 (define (first-exp seq) (car seq))
 (define (rest-exps seq) (cdr seq))
@@ -218,6 +225,11 @@
  procedure-parameters
  procedure-body
  procedure-environment
+
+ compiled-procedure?
+ make-compiled-procedure
+ compiled-procedure-entry
+ compiled-procedure-env
 
  first-exp
  last-exp?
