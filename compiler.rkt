@@ -22,6 +22,8 @@
          (compile (cond->if exp) target linkage cenv))
         ((let? exp)
          (compile (let->combination exp) target linkage cenv))
+        ((apply-primitive? exp)
+         (compile-apply-primitive exp target linkage))
         ((application? exp)
          (compile-application exp target linkage cenv))
         (else
@@ -294,7 +296,7 @@
          (error "return linkage, target not val: COMPILE"
                 target))))
 
-(define all-regs '(env proc val argl continue))
+(define all-regs '(env proc val argl continue arg1 arg2))
 
 (define label-counter 0)
 
@@ -395,6 +397,48 @@
               (cons index var-index)
               (frame-iter var (cdr cenv) (+ index 1))))))
   (frame-iter var cenv 0))
+(define (spread-arguments operands)
+  (let ((operand1 (car operands))
+        (operand2 (cadr operands)))
+    (let ((code1 (if (self-evaluating? operand1)
+                     (empty-instruction-sequence)
+                     (compile operand1 'arg1 'next)))
+          (code2 (if (self-evaluating? operand2)
+                     (empty-instruction-sequence)
+                     (compile operand2 'arg2 'next))))
+      (list code1 code2))))
+
+(define (apply-primitive? exp)
+  (or (tagged-list? exp '+)
+      (tagged-list? exp '*)
+      (tagged-list? exp '=)
+      (tagged-list? exp '-)))
+
+(define (compile-apply-primitive exp target linkage)
+  (let ((operator (car exp))
+        (operands (cdr exp)))
+    (let ((compiled-code (spread-arguments operands))
+          (operand1 (car operands))
+          (operand2 (cadr operands)))
+      (let ((code1 (if (self-evaluating? operand1)
+                       `(const ,operand1)
+                       '(reg arg1)))
+            (code2 (if (self-evaluating? operand2)
+                       `(const ,operand2)
+                       '(reg arg2)))
+            (compiled1 (car compiled-code))
+            (compiled2 (cadr compiled-code)))
+        (end-with-linkage
+         linkage
+         (preserving
+          '(env)
+          compiled1
+          (preserving
+           '(env arg1)
+           compiled2
+           (make-instruction-sequence
+            '(arg1 arg2) '(proc ,target)
+            `((assign ,target (op, operator) ,code1 ,code2))))))))))
 
 (#%provide compile
            statements
