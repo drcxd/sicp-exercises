@@ -147,6 +147,7 @@
   (apply (primitive-implementation proc) args))
 
 (define (true? x) (not (eq? false x)))
+(define (false? x) (eq? false x))
 
 (define (or? exp) (tagged-list? exp 'or))
 (define (or-exps exp) (cdr exp))
@@ -238,6 +239,7 @@
  apply-primitive-procedure
 
  true?
+ false?
 
  or?
  or->application

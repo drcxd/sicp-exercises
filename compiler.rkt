@@ -350,3 +350,6 @@
            (statements seq2))))
 
 (#%provide compile)
+(#%provide compile
+           statements
+           all-regs)

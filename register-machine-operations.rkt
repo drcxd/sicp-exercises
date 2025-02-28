@@ -81,6 +81,7 @@
    (list 'apply-primitive-procedure apply-primitive-procedure)
 
    (list 'true? true?)
+   (list 'false? false?)
 
    (list 'or? or?)
    (list 'or->application or->application)
@@ -91,6 +92,13 @@
    (list 'prompt-for-input prompt-for-input)
    (list 'read read)
    (list 'announce-output announce-output)
-   (list 'user-print user-print)))
+   (list 'user-print user-print)
+
+   (list 'list list)
+   (list 'cons cons)
+   (list '+ +)
+   (list '- -)
+   (list '* *)
+   (list '= =)))
 
 (#%provide machine-operations)
