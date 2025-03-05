@@ -414,31 +414,68 @@
       (tagged-list? exp '=)
       (tagged-list? exp '-)))
 
+(define (compile-multi-operands exp target linkage)
+  (define (iter code opt ops)
+    (cond ((no-operands? ops) code)
+          (else
+           (let ((op-code (compile (car ops) 'arg2 'next))
+                 (apply-code (make-instruction-sequence
+                              '(arg1 arg2) '(arg1)
+                              `((assign arg1 (op ,opt) (reg arg1) (reg arg2))))))
+             (iter (preserving
+                    '(env)
+                    code
+                    (preserving
+                     '(arg1)
+                     op-code
+                     apply-code)) opt (cdr ops))))))
+  (let ((opt (operator exp))
+        (ops (operands exp)))
+    (let ((init-code (make-instruction-sequence '() '(arg1) `((assign arg1 (const ,(op-identity opt))))))
+          (main-code (iter (empty-instruction-sequence) opt ops))
+          (final-code (make-instruction-sequence '(arg1) `(,target) `((assign ,target (reg arg1))))))
+      (end-with-linkage linkage (append-instruction-sequences
+                                 (append-instruction-sequences
+                                  init-code
+                                  main-code)
+                                 final-code)))))
+
+(define (multi-operands? opt)
+  (or (eq? opt '+)
+      (eq? opt '*)))
+
+(define (op-identity opt)
+  (cond ((eq? opt '+) 0)
+        ((eq? opt '*) 1)
+        (else
+         (error "Unsupported multiple operands operator: COMPILE-MULTI-OPERANDS" opt))))
+
 (define (compile-apply-primitive exp target linkage)
-  (let ((operator (car exp))
-        (operands (cdr exp)))
-    (let ((compiled-code (spread-arguments operands))
-          (operand1 (car operands))
-          (operand2 (cadr operands)))
-      (let ((code1 (if (self-evaluating? operand1)
-                       `(const ,operand1)
-                       '(reg arg1)))
-            (code2 (if (self-evaluating? operand2)
-                       `(const ,operand2)
-                       '(reg arg2)))
-            (compiled1 (car compiled-code))
-            (compiled2 (cadr compiled-code)))
-        (end-with-linkage
-         linkage
-         (preserving
-          '(env)
-          compiled1
-          (preserving
-           '(env arg1)
-           compiled2
-           (make-instruction-sequence
-            '(arg1 arg2) '(proc ,target)
-            `((assign ,target (op, operator) ,code1 ,code2))))))))))
+  (let ((opt (operator exp))
+        (ops (operands exp)))
+    (cond ((multi-operands? opt) (compile-multi-operands exp target linkage))
+          (else (let ((compiled-code (spread-arguments ops))
+                      (operand1 (car ops))
+                      (operand2 (cadr ops)))
+                  (let ((code1 (if (self-evaluating? operand1)
+                                   `(const ,operand1)
+                                   '(reg arg1)))
+                        (code2 (if (self-evaluating? operand2)
+                                   `(const ,operand2)
+                                   '(reg arg2)))
+                        (compiled1 (car compiled-code))
+                        (compiled2 (cadr compiled-code)))
+                    (end-with-linkage
+                     linkage
+                     (preserving
+                      '(env)
+                      compiled1
+                      (preserving
+                       '(env arg1)
+                       compiled2
+                       (make-instruction-sequence
+                        '(arg1 arg2) '(proc ,target)
+                        `((assign ,target (op, opt) ,code1 ,code2))))))))))))
 
 (#%provide compile
            statements
