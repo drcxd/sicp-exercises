@@ -1,0 +1,14 @@
+#+title: Exercise 5.38
+
+* How to deal with arbitrary number of arguments?
+
+We have to compile expressions such as ~(* 1 2 3 4)~ or ~(* a b c d)~. We have only two argument registers, so we must accumulate the results so far in one register, put the next argument in another register, and perform the operation.
+
+Racket's evaluates ~(*)~ to ~1~ and ~(+)~ to ~0~ by default. Thus, my algorithm is:
+
+To apply ~+~ on any number of arguments:
+
+1. Put ~0~ in to register ~arg1~
+2. If there are no more arguments, assign the value in ~arg1~ to ~val~.
+3. Otherwise, generate code to evaluate the next argument, and move the result to ~arg2~.
+4. Generate code to apply the operation upon ~arg1~ and ~arg2~, and move the result to ~arg1~. Go back to 2.
