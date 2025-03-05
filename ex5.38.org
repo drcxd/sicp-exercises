@@ -12,3 +12,14 @@ To apply ~+~ on any number of arguments:
 2. If there are no more arguments, assign the value in ~arg1~ to ~val~.
 3. Otherwise, generate code to evaluate the next argument, and move the result to ~arg2~.
 4. Generate code to apply the operation upon ~arg1~ and ~arg2~, and move the result to ~arg1~. Go back to 2.
+
+* Optimizations
+
+The algorithm described above works, but we can further optimize it.
+
+In fact, the code that initializes ~arg1~ to operation identity is only required when there is no operands. When there is only one operand, we can simply evaluate the operand and assign it to the target. When there are multiple operands, we use the following algorithms:
+
+1. Evaluate the first operand to ~arg1~.
+2. For the rest operands, if there is only one argument left, evaluate to ~arg2~, apply the operation on ~arg1~ and ~arg2~ to target.
+3. Otherwise, evaluate the next argument to ~arg2~.
+4. Apply the operation upon ~arg1~ and ~arg2~ to ~arg1~. Go back to 2.
