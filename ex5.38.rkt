@@ -31,7 +31,7 @@
 
 (define controller
   (append initializer
-          (statements (compile '(* 2 3 4 5) 'val 'next))))
+          (statements (compile '(* 1 2 (+ 1 2)) 'val 'next))))
 
 controller
 
