@@ -370,38 +370,103 @@
 
 (define (compile-multi-operands exp target linkage)
   (define (iter code opt ops target linkage)
-    (if (last-operand? ops)
-        (let ((op-code (compile (first-operand ops) 'arg2 'next)))
-          (end-with-linkage
-           linkage
-           (preserving
-            '(env)
-            code
-            (preserving
-             '(arg1)
-             op-code
-             (make-instruction-sequence
-              '(arg1 arg2) `(,target)
-              `((assign ,target (op ,opt) (reg arg1) (reg arg2))))))))
-        (let ((op-code (compile (first-operand ops) 'arg2 'next)))
-          (iter
-           (preserving
-            '(env)
-            code
-            (preserving
-             '(arg1)
-             op-code
-             (make-instruction-sequence
-              '(arg1 arg2) '(arg1)
-              `((assign arg1 (op ,opt) (reg arg1) (reg arg2))))))
-           opt (rest-operands ops) target linkage))))
+    (let ((op (first-operand ops)))
+      (if (last-operand? ops)
+          (if (self-evaluating? op)
+              (end-with-linkage
+               linkage
+               (preserving
+                '()
+                code
+                (make-instruction-sequence
+                 '(arg1)
+                 `(,target)
+                 `((assign ,target (op ,opt) (reg arg1) (const ,op))))))
+              (let ((op-code (compile (first-operand ops) 'arg2 'next)))
+                (end-with-linkage
+                 linkage
+                 (preserving
+                  '(env)
+                  code
+                  (preserving
+                   '(arg1)
+                   op-code
+                   (make-instruction-sequence
+                    '(arg1 arg2) `(,target)
+                    `((assign ,target (op ,opt) (reg arg1) (reg arg2)))))))))
+          (if (self-evaluating? op)
+              (iter (append-instruction-sequences
+                     code
+                     (make-instruction-sequence
+                      '(arg1)
+                      '(arg1)
+                      `((assgin arg1 (op ,opt) (reg arg1) (const ,op)))))
+                    opt
+                    (rest-operands ops)
+                    target
+                    linkage)
+              (let ((op-code (compile (first-operand ops) 'arg2 'next)))
+                (iter
+                 (preserving
+                  '(env)
+                  code
+                  (preserving
+                   '(arg1)
+                   op-code
+                   (make-instruction-sequence
+                    '(arg1 arg2) '(arg1)
+                    `((assign arg1 (op ,opt) (reg arg1) (reg arg2))))))
+                 opt (rest-operands ops) target linkage))))))
   (define (compile-single-operand exp target linkage)
     (let ((eval-op-code (compile exp target linkage)))
       (end-with-linkage linkage eval-op-code)))
   (define (compile-operands-more-than-one opt ops target linkage)
-    (let* ((init-code (compile (first-operand ops) 'arg1 'next))
-           (main-code (iter init-code opt (rest-operands ops) target linkage)))
-      main-code))
+    (let* ((op1 (first-operand ops))
+           (op2 (first-operand (rest-operands ops)))
+           (other-ops (rest-operands (rest-operands ops)))
+           (t (if (null? other-ops)
+                  target
+                  'arg1))
+           (init-code
+            (cond ((and (self-evaluating? op1)
+                        (self-evaluating? op2))
+                   (make-instruction-sequence
+                    '()
+                    `(,t)
+                    `((assign ,t (op ,opt) (const ,op1) (const ,op2)))))
+                  ((and (self-evaluating? op1)
+                        (not (self-evaluating? op2)))
+                   (append-instruction-sequences
+                    (compile op2 'arg1 'next)
+                    (make-instruction-sequence
+                     '(arg1)
+                     `(,t)
+                     `((assign ,t (op ,opt) (const ,op1) (reg arg1))))))
+                  ((and (self-evaluating? op2)
+                        (not (self-evaluating? op1)))
+                   (append-instruction-sequences
+                    (compile op1 'arg1 'next)
+                    (make-instruction-sequence
+                     '(arg1)
+                     `(,t)
+                     `((assign ,t (op ,opt) (reg arg1) (const ,op2))))))
+                  (else
+                   (let ((code1 (compile op1 'arg1 'next))
+                         (code2 (compile op2 'arg2 'next))
+                         (op-code (make-instruction-sequence
+                                   '(arg1 arg2)
+                                   `(,t)
+                                   `((assign ,t (op ,opt) (reg arg1) (reg arg2))))))
+                     (preserving
+                      '(env)
+                      code1
+                      (preserving
+                       '(arg1)
+                       code2
+                       op-code)))))))
+      (if (null? other-ops)
+          (end-with-linkage linkage init-code)
+          (iter init-code opt other-ops target linkage))))
   (let ((opt (operator exp))
         (ops (operands exp)))
     (cond ((no-operands? ops)

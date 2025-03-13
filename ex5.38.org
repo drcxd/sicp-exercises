@@ -23,3 +23,46 @@ In fact, the code that initializes ~arg1~ to operation identity is only required
 2. For the rest operands, if there is only one argument left, evaluate to ~arg2~, apply the operation on ~arg1~ and ~arg2~ to target.
 3. Otherwise, evaluate the next argument to ~arg2~.
 4. Apply the operation upon ~arg1~ and ~arg2~ to ~arg1~. Go back to 2.
+
+
+Another optimization we can do is to remove the evaluation for self-evaluating operands. For example, currently the compiler generates the following code:
+
+#+begin_src scheme
+   (assign arg1 (const 2))
+   (assign arg2 (const 3))
+   (assign arg1 (op *) (reg arg1) (reg arg2))
+   (assign arg2 (const 4))
+   (assign arg1 (op *) (reg arg1) (reg arg2))
+   (assign arg2 (const 5))
+   (assign val (op *) (reg arg1) (reg arg2)))
+#+end_src
+
+The assignment to ~arg1~ and ~arg2~ are redundant in this case. The optimal code would be:
+
+#+begin_src scheme
+  (assign arg1 (op *) (const 2) (const 3))
+  (assign arg1 (op *) (reg arg1) (const 4))
+  (assign arg1 (op *) (reg arg1) (const 4))
+  (assign val (op *) (reg arg1) (const 5))
+#+end_src
+
+How to do this? We have to modify the algorithm for multiple operands above.
+
+For the first two operands:
+
+1. If both are self evaluated, then we directly perform the requested operation upon them.
+2. If the first is self evaluated, but the second is not, then we evaluate the second operand to ~arg1~, and then perform the operation upon them.
+3. If the first is not self evaluated, but the second is, then we evaluate the first operand to ~arg1~, and then perform the operation upon them.
+4. If the both are not self evaluated, then we evaluate the first operand to ~arg1~, and the second operand to ~arg2~, then perform the operation upon them.
+
+
+If there are no other operands, then the target of the operation above is the input target. Otherwise, the target is ~arg1~. And the program transfer into a loop.
+
+In the loop:
+
+1. If there is only one operand left:
+   1. If it is self evaluated, then perform the operation upon ~arg1~ and the expression to the target
+   2. Otherwise, evaluate the operand to ~arg2~ and perform the operation upon ~arg1~ and ~arg2~ to the target.
+2. Otherwise,
+   1. If the next operand is self evaluated, we perform the operation upon ~arg1~ and it to ~arg1~.
+   2. Otherwise, we evaluate the next operand to ~arg2~ and perform the operation upon 
