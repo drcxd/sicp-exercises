@@ -359,7 +359,24 @@
 (define (extend-compile-environment cenv plist)
   (cons plist cenv))
 
-(#%provide compile)
+;; Exercise 5.41
+
+(define (find-variable var cenv)
+  (define (frame-iter var cenv index)
+    (define (param-iter var params index)
+      (if (null? params)
+          -1
+          (if (eq? var (car params))
+              index
+              (param-iter var (cdr params) (+ index 1)))))
+    (if (null? cenv)
+        'not-found
+        (let ((var-index (param-iter var (car cenv) 0)))
+          (if (>= var-index 0)
+              (cons index var-index)
+              (frame-iter var (cdr cenv) (+ index 1))))))
+  (frame-iter var cenv 0))
+
 (#%provide compile
            statements
            all-regs
