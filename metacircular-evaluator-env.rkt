@@ -157,15 +157,15 @@
 
 (define (lexical-address-fetch lex-addr env)
   (let ((frame (list-ref env (lex-addr-frame lex-addr))))
-    (list-ref frame (lex-addr-index lex-addr))))
+    (list-ref (cdr frame) (lex-addr-index lex-addr))))
 
 (define (lexical-address-lookup lex-addr env)
   (let ((v-pair (lexical-address-fetch lex-addr env)))
     (if (eq? (cdr v-pair) '*unassigned*)
-          (error "Unassgined variable LEXICAL-ADDRESS-LOOKUP" (car v-pair))
+          (error "Unassgined variable: LEXICAL-ADDRESS-LOOKUP" (car v-pair))
           (cdr v-pair))))
 
-(define (lexical-address-set! lex-addr env val)
+(define (lexical-address-set! lex-addr val env)
   (let ((v-pair (lexical-address-fetch lex-addr env)))
     (set-cdr! v-pair val)
     'done))

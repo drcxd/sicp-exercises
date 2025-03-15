@@ -73,6 +73,8 @@
    (list 'set-variable-value! set-variable-value!)
    (list 'define-variable! define-variable!)
    (list 'get-global-environment get-global-environment)
+   (list 'lexical-address-lookup lexical-address-lookup)
+   (list 'lexical-address-set! lexical-address-set!)
 
    (list 'first-exp first-exp)
    (list 'last-exp? last-exp?)
