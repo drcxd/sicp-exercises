@@ -149,6 +149,26 @@
   (let ((frame (first-frame env)))
     (set-car! env (filter (lambda (binding) (not (eq? var (car binding)))) frame))))
 
+;; Exercise 5.39
+
+(define (lex-addr-frame lex-addr) (car lex-addr))
+
+(define (lex-addr-index lex-addr) (cdr lex-addr))
+
+(define (lexical-address-fetch lex-addr env)
+  (let ((frame (list-ref env (lex-addr-frame lex-addr))))
+    (list-ref frame (lex-addr-index lex-addr))))
+
+(define (lexical-address-lookup lex-addr env)
+  (let ((v-pair (lexical-address-fetch lex-addr env)))
+    (if (eq? (cdr v-pair) '*unassigned*)
+          (error "Unassgined variable LEXICAL-ADDRESS-LOOKUP" (car v-pair))
+          (cdr v-pair))))
+
+(define (lexical-address-set! lex-addr env val)
+  (let ((v-pair (lexical-address-fetch lex-addr env)))
+    (set-cdr! v-pair val)
+    'done))
 ;; -- end environment
 
 (#%provide
@@ -158,4 +178,6 @@
  define-variable!
  remove-from-env!
  the-global-environment
- get-global-environment)
+ get-global-environment
+ lexical-address-lookup
+ lexical-address-set!)
