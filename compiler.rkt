@@ -2,27 +2,26 @@
 
 (#%require "./metacircular-evaluator-syntax.rkt")
 (#%require "./set.rkt")
-(#%require "./tagged-list.rkt")
 
-(define (compile exp target linkage)
+(define (compile exp target linkage cenv)
   (cond ((self-evaluating? exp)
          (compile-self-evaluating exp target linkage))
         ((quoted? exp) (compile-quoted exp target linkage))
         ((variable? exp)
-         (compile-variable exp target linkage))
+         (compile-variable exp target linkage cenv))
         ((assignment? exp)
-         (compile-assignment exp target linkage))
+         (compile-assignment exp target linkage cenv))
         ((definition? exp)
-         (compile-definition exp target linkage))
-        ((if? exp) (compile-if exp target linkage))
-        ((lambda? exp) (compile-lambda exp target linkage))
+         (compile-definition exp target linkage cenv))
+        ((if? exp) (compile-if exp target linkage cenv))
+        ((lambda? exp) (compile-lambda exp target linkage cenv))
         ((begin? exp)
          (compile-sequence
-          (begin-actions exp) target linkage))
+          (begin-actions exp) target linkage cenv))
         ((cond? exp)
-         (compile (cond->if exp) target linkage))
+         (compile (cond->if exp) target linkage cenv))
         ((application? exp)
-         (compile-application exp target linkage))
+         (compile-application exp target linkage cenv))
         (else
          (error "Unknown expression type: COMPILE" exp))))
 
@@ -61,7 +60,7 @@
     '() (list target)
     `((assign ,target (const ,(text-of-quotation exp)))))))
 
-(define (compile-variable exp target linkage)
+(define (compile-variable exp target linkage cenv)
   (end-with-linkage
    linkage
    (make-instruction-sequence '(env) (list target)
@@ -70,7 +69,7 @@
                                         (const ,exp)
                                         (reg env))))))
 
-(define (compile-assignment exp target linkage)
+(define (compile-assignment exp target linkage cenv)
   (let ((var (assignment-variable exp))
         (get-value-code
          (compile (assignment-value exp) 'val 'next)))
@@ -86,7 +85,7 @@
                                             (reg env))
                                    (assign ,target (const ok))))))))
 
-(define (compile-definition exp target linkage)
+(define (compile-definition exp target linkage cenv)
   (let ((var (definition-variable exp))
         (get-value-code
          (compile (definition-value exp) 'val 'next)))
@@ -102,7 +101,7 @@
                              (reg env))
                     (assign ,target (const ok))))))))
 
-(define (compile-if exp target linkage)
+(define (compile-if exp target linkage cenv)
   (let ((t-branch (make-label 'true-branch))
         (f-branch (make-label 'false-branch))
         (after-if (make-label 'after-if)))
@@ -127,15 +126,15 @@
                       (append-instruction-sequences f-branch a-code))
                      after-if))))))
 
-(define (compile-sequence seq target linkage)
+(define (compile-sequence seq target linkage cenv)
   (if (last-exp? seq)
       (compile (first-exp seq) target linkage)
       (preserving
        '(env continue)
        (compile (first-exp seq) target 'next)
-       (compile-sequence (rest-exps seq) target linkage))))
+       (compile-sequence (rest-exps seq) target linkage cenv))))
 
-(define (compile-lambda exp target linkage)
+(define (compile-lambda exp target linkage cenv)
   (let ((proc-entry (make-label 'entry))
         (after-lambda (make-label 'after-lambda)))
     (let ((lambda-linkage
@@ -149,10 +148,10 @@
                                               (op make-compiled-procedure)
                                               (label ,proc-entry)
                                               (reg env)))))
-        (compile-lambda-body exp proc-entry))
+        (compile-lambda-body exp proc-entry cenv))
        after-lambda))))
 
-(define (compile-lambda-body exp proc-entry)
+(define (compile-lambda-body exp proc-entry cenv)
   (let ((formals (lambda-parameters exp)))
     (append-instruction-sequences
      (make-instruction-sequence '(env proc argl) '(env)
@@ -165,9 +164,13 @@
                                           (const ,formals)
                                           (reg argl)
                                           (reg env))))
-     (compile-sequence (lambda-body exp) 'val 'return))))
+     (compile-sequence
+      (lambda-body exp)
+      'val
+      'return
+      (extend-compile-environment formals cenv)))))
 
-(define (compile-application exp target linkage)
+(define (compile-application exp target linkage cenv)
   (let ((proc-code (compile (operator exp) 'proc 'next))
         (operand-codes
          (map (lambda
@@ -349,7 +352,15 @@
    (append (statements seq1)
            (statements seq2))))
 
+;; Exercise 5.40
+
+(define the-compile-environment '())
+
+(define (extend-compile-environment cenv plist)
+  (cons plist cenv))
+
 (#%provide compile)
 (#%provide compile
            statements
-           all-regs)
+           all-regs
+           the-compile-environment)
