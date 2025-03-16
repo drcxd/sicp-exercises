@@ -1,6 +1,7 @@
 #lang sicp
 
 (#%require "./tagged-list.rkt")
+(#%require "./filter.rkt")
 
 (define (self-evaluating? exp)
   (cond ((number? exp) true)
@@ -15,6 +16,7 @@
 (define (assignment? exp) (tagged-list? exp 'set!))
 (define (assignment-variable exp) (cadr exp))
 (define (assignment-value exp) (caddr exp))
+(define (make-assignment var value) (list 'set! var value))
 
 (define (definition? exp) (tagged-list? exp 'define))
 (define (definition-variable exp)
@@ -103,6 +105,7 @@
 (define (decls->vars-and-exps decls)
   (cons (map (lambda (decl) (car decl)) decls)
         (map (lambda (decl) (cadr decl)) decls)))
+(define (make-let decls body) (cons 'let (cons decls body)))
 
 (define (let->combination exp)
   (let ((name (let-name exp))
@@ -120,6 +123,25 @@
             (make-application (make-lambda vars body)
                               exps))))))
 
+(define (scan-out-defines body)
+  (define (define->decl define-exp)
+    (list (definition-variable define-exp) (definition-value define-exp)))
+  (define (body->decls-and-exps body)
+    (cons (map define->decl (filter definition? body))
+          (filter (lambda (exp)
+                    (not (definition? exp))) body)))
+  (define (decl->set-exp decl)
+    (make-assignment (car decl) (cadr decl)))
+  (define (decl->unassigned-decl decl)
+    (list (car decl) ''*unassigned*))
+  (let ((decls-and-exps (body->decls-and-exps body)))
+    (let ((decls (car decls-and-exps))
+          (exps (cdr decls-and-exps)))
+      (if (null? decls)
+          body
+          (let ((unassigned-decls (map decl->unassigned-decl decls))
+                (set-exps (map decl->set-exp decls)))
+            (list (make-let unassigned-decls (append set-exps exps))))))))
 
 (define (primitive-procedure? proc)
   (tagged-list? proc 'primitive))
@@ -219,6 +241,7 @@
 
  let?
  let->combination
+ scan-out-defines
 
  primitive-procedure?
  compound-procedure?

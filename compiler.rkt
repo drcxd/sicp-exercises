@@ -20,6 +20,8 @@
           (begin-actions exp) target linkage cenv))
         ((cond? exp)
          (compile (cond->if exp) target linkage cenv))
+        ((let? exp)
+         (compile (let->combination exp) target linkage cenv))
         ((application? exp)
          (compile-application exp target linkage cenv))
         (else
@@ -182,7 +184,7 @@
                                           (reg argl)
                                           (reg env))))
      (compile-sequence
-      (lambda-body exp)
+      (scan-out-defines (lambda-body exp))
       'val
       'return
       (extend-compile-environment cenv formals)))))
