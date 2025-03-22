@@ -5,12 +5,14 @@
 (#%require "./io.rkt")
 
 (define (user-print object)
-  (if (compound-procedure? object)
-      (display (list 'compound-procedure
-                     (procedure-parameters object)
-                     (procedure-body object)
-                     '<procedure-env>))
-      (display object)))
+  (cond ((compound-procedure? object)
+         (display (list 'compound-procedure
+                        (procedure-parameters object)
+                        (procedure-body object)
+                        '<procedure-env>)))
+        ((compiled-procedure? object)
+         (display '<compiled-procedure>))
+        (display object)))
 
 (define machine-operations
   (list

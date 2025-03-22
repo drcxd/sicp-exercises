@@ -4,7 +4,8 @@
 (#%require "./register-machine-operations.rkt")
 
 (define controller
-  '(read-eval-print-loop
+  '((branch (label external-entry))
+    read-eval-print-loop
     (perform (op initialize-stack))
     (perform
      (op prompt-for-input) (const ";;EC-Eval input:"))
@@ -16,6 +17,12 @@
     (perform (op announce-output) (const ";;EC-Eval value:"))
     (perform (op user-print) (reg val))
     (goto (label read-eval-print-loop))
+
+    external-entry
+    (perform (op initialize-stack))
+    (assign env (op get-global-environment))
+    (assign continue (label print-result))
+    (goto (reg val))
 
     eval-dispatch
     (test (op self-evaluating?) (reg exp))
@@ -118,6 +125,8 @@
     (branch (label primitive-apply))
     (test (op compound-procedure?) (reg proc))
     (branch (label compound-apply))
+    (test (op compiled-procedure?) (reg proc))
+    (branch (label compiled-apply))
     (goto (label unknown-procedure-type))
 
     primitive-apply
@@ -134,6 +143,11 @@
             (reg unev) (reg argl) (reg env))
     (assign unev (op procedure-body) (reg proc))
     (goto (label ev-sequence))
+
+    compiled-apply
+    (restore continue)
+    (assign val (op compiled-procedure-entry) (reg proc))
+    (goto (reg val))
 
     ev-let
     (assign exp (op let->combination) (reg exp))
@@ -246,4 +260,9 @@
    machine-operations
    controller))
 
-(start eceval)
+(define (start-eceval)
+  (set-register-contents! eceval 'flag false)
+  (start eceval))
+
+(#%provide eceval
+           start-eceval)

@@ -461,4 +461,5 @@
            set-breakpoint
            proceed-machine
            cancel-breakpoint
-           cancel-all-breakpoints)
+           cancel-all-breakpoints
+           assemble)
