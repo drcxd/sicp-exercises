@@ -2,6 +2,7 @@
 
 (#%require "./metacircular-evaluator-syntax.rkt")
 (#%require "./set.rkt")
+(#%require "./tagged-list.rkt")
 
 (define (compile exp target linkage cenv)
   (cond ((self-evaluating? exp)
@@ -23,7 +24,7 @@
         ((let? exp)
          (compile (let->combination exp) target linkage cenv))
         ((apply-primitive? exp)
-         (compile-apply-primitive exp target linkage))
+         (compile-apply-primitive exp target linkage cenv))
         ((application? exp)
          (compile-application exp target linkage cenv))
         (else
@@ -397,15 +398,16 @@
               (cons index var-index)
               (frame-iter var (cdr cenv) (+ index 1))))))
   (frame-iter var cenv 0))
-(define (spread-arguments operands)
+
+(define (spread-arguments operands cenv)
   (let ((operand1 (car operands))
         (operand2 (cadr operands)))
     (let ((code1 (if (self-evaluating? operand1)
                      (empty-instruction-sequence)
-                     (compile operand1 'arg1 'next)))
+                     (compile operand1 'arg1 'next cenv)))
           (code2 (if (self-evaluating? operand2)
                      (empty-instruction-sequence)
-                     (compile operand2 'arg2 'next))))
+                     (compile operand2 'arg2 'next cenv))))
       (list code1 code2))))
 
 (define (apply-primitive? exp)
@@ -414,7 +416,7 @@
       (tagged-list? exp '=)
       (tagged-list? exp '-)))
 
-(define (compile-multi-operands exp target linkage)
+(define (compile-multi-operands exp target linkage cenv)
   (define (iter code opt ops target linkage)
     (let ((op (first-operand ops)))
       (if (last-operand? ops)
@@ -428,7 +430,7 @@
                  '(arg1)
                  `(,target)
                  `((assign ,target (op ,opt) (reg arg1) (const ,op))))))
-              (let ((op-code (compile (first-operand ops) 'arg2 'next)))
+              (let ((op-code (compile (first-operand ops) 'arg2 'next cenv)))
                 (end-with-linkage
                  linkage
                  (preserving
@@ -451,7 +453,7 @@
                     (rest-operands ops)
                     target
                     linkage)
-              (let ((op-code (compile (first-operand ops) 'arg2 'next)))
+              (let ((op-code (compile (first-operand ops) 'arg2 'next cenv)))
                 (iter
                  (preserving
                   '(env)
@@ -463,10 +465,10 @@
                     '(arg1 arg2) '(arg1)
                     `((assign arg1 (op ,opt) (reg arg1) (reg arg2))))))
                  opt (rest-operands ops) target linkage))))))
-  (define (compile-single-operand exp target linkage)
-    (let ((eval-op-code (compile exp target linkage)))
+  (define (compile-single-operand exp target linkage cenv)
+    (let ((eval-op-code (compile exp target linkage cenv)))
       (end-with-linkage linkage eval-op-code)))
-  (define (compile-operands-more-than-one opt ops target linkage)
+  (define (compile-operands-more-than-one opt ops target linkage cenv)
     (let* ((op1 (first-operand ops))
            (op2 (first-operand (rest-operands ops)))
            (other-ops (rest-operands (rest-operands ops)))
@@ -483,7 +485,7 @@
                   ((and (self-evaluating? op1)
                         (not (self-evaluating? op2)))
                    (append-instruction-sequences
-                    (compile op2 'arg1 'next)
+                    (compile op2 'arg1 'next cenv)
                     (make-instruction-sequence
                      '(arg1)
                      `(,t)
@@ -491,14 +493,14 @@
                   ((and (self-evaluating? op2)
                         (not (self-evaluating? op1)))
                    (append-instruction-sequences
-                    (compile op1 'arg1 'next)
+                    (compile op1 'arg1 'next cenv)
                     (make-instruction-sequence
                      '(arg1)
                      `(,t)
                      `((assign ,t (op ,opt) (reg arg1) (const ,op2))))))
                   (else
-                   (let ((code1 (compile op1 'arg1 'next))
-                         (code2 (compile op2 'arg2 'next))
+                   (let ((code1 (compile op1 'arg1 'next cenv))
+                         (code2 (compile op2 'arg2 'next cenv))
                          (op-code (make-instruction-sequence
                                    '(arg1 arg2)
                                    `(,t)
@@ -523,13 +525,14 @@
              `(,target)
              `((assign ,target (const ,(op-identity opt)))))))
           ((last-operand? ops)
-           (compile-single-operand (first-operand ops) target linkage))
+           (compile-single-operand (first-operand ops) target linkage cenv))
           (else
            (compile-operands-more-than-one
             opt
             ops
             target
-            linkage)))))
+            linkage
+            cenv)))))
 
 (define (multi-operands? opt)
   (or (eq? opt '+)
@@ -541,32 +544,35 @@
         (else
          (error "Unsupported multiple operands operator: COMPILE-MULTI-OPERANDS" opt))))
 
-(define (compile-apply-primitive exp target linkage)
+(define (compile-apply-primitive exp target linkage cenv)
   (let ((opt (operator exp))
         (ops (operands exp)))
-    (cond ((multi-operands? opt) (compile-multi-operands exp target linkage))
-          (else (let ((compiled-code (spread-arguments ops))
-                      (operand1 (car ops))
-                      (operand2 (cadr ops)))
-                  (let ((code1 (if (self-evaluating? operand1)
-                                   `(const ,operand1)
-                                   '(reg arg1)))
-                        (code2 (if (self-evaluating? operand2)
-                                   `(const ,operand2)
-                                   '(reg arg2)))
-                        (compiled1 (car compiled-code))
-                        (compiled2 (cadr compiled-code)))
-                    (end-with-linkage
-                     linkage
-                     (preserving
-                      '(env)
-                      compiled1
-                      (preserving
-                       '(env arg1)
-                       compiled2
-                       (make-instruction-sequence
-                        '(arg1 arg2) '(proc ,target)
-                        `((assign ,target (op, opt) ,code1 ,code2))))))))))))
+    (let ((lex-addr (find-variable opt cenv)))
+      (if (eq? lex-addr 'not-found)
+          (cond ((multi-operands? opt) (compile-multi-operands exp target linkage cenv))
+                (else (let ((compiled-code (spread-arguments ops cenv))
+                            (operand1 (car ops))
+                            (operand2 (cadr ops)))
+                        (let ((code1 (if (self-evaluating? operand1)
+                                         `(const ,operand1)
+                                         '(reg arg1)))
+                              (code2 (if (self-evaluating? operand2)
+                                         `(const ,operand2)
+                                         '(reg arg2)))
+                              (compiled1 (car compiled-code))
+                              (compiled2 (cadr compiled-code)))
+                          (end-with-linkage
+                           linkage
+                           (preserving
+                            '(env)
+                            compiled1
+                            (preserving
+                             '(env arg1)
+                             compiled2
+                             (make-instruction-sequence
+                              '(arg1 arg2) '(proc ,target)
+                              `((assign ,target (op, opt) ,code1 ,code2))))))))))
+          (compile-application exp target linkage cenv)))))
 
 (#%provide compile
            statements

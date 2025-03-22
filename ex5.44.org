@@ -1,0 +1,3 @@
+#+title: Exercise 5.44
+
+Our plan is to change the ~compile-apply-primitive~ so that before it compile codes using open-coding primitive procedures, it first check if the operator is bound in the compile-time environments. If so, then the procedure delegates work to ~compile-application~.
