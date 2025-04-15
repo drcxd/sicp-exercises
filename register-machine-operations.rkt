@@ -12,7 +12,7 @@
                         '<procedure-env>)))
         ((compiled-procedure? object)
          (display '<compiled-procedure>))
-        (display object)))
+        (else (display object))))
 
 (define machine-operations
   (list
