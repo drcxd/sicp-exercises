@@ -1,0 +1,213 @@
+#+title: Exercise 5.45
+
+* a
+
+#+begin_example
+;;EC-Eval input:
+(factorial 1)
+
+(total-pushes = 5 maximum-depth = 3)
+
+;;EC-Eval value:
+1
+
+;;EC-Eval input:
+(factorial 2)
+
+(total-pushes = 11 maximum-depth = 5)
+
+;;EC-Eval value:
+2
+
+;;EC-Eval input:
+(factorial 3)
+
+(total-pushes = 17 maximum-depth = 8)
+
+;;EC-Eval value:
+6
+
+;;EC-Eval input:
+(factorial 4)
+
+(total-pushes = 23 maximum-depth = 11)
+
+;;EC-Eval value:
+24
+
+;;EC-Eval input:
+(factorial 5)
+
+(total-pushes = 29 maximum-depth = 14)
+
+;;EC-Eval value:
+120
+
+;;EC-Eval input:
+(factorial 6)
+
+(total-pushes = 35 maximum-depth = 17)
+
+;;EC-Eval value:
+720
+
+;;EC-Eval input:
+(factorial 7)
+
+(total-pushes = 41 maximum-depth = 20)
+
+;;EC-Eval value:
+5040
+
+;;EC-Eval input:
+#+end_example
+
+
+#+NAME: number of pushes
+| n           |  1 |  2 |  3 |   4 |   5 |   6 |
+| compiled    |  5 | 11 | 17 |  23 |  29 |  36 |
+| interpreted | 16 | 48 | 80 | 112 | 144 | 176 |
+| machine     |  0 |  2 |  4 |   6 |   8 |  10 |
+
+#+NAME: maximum depth
+| n           | 1 |  2 |  3 |  4 |  5 |  6 |
+| compiled    | 3 |  5 |  8 | 11 | 14 | 17 |
+| interpreted | 8 | 13 | 18 | 23 | 28 | 33 |
+| machine     | 0 |  2 |  4 |  6 |  8 | 10 |
+
+|                  | compiled/interpreted | machine/interpreted |
+| number of pushes | 6 / 32               | 2 / 32              |
+| maximum depth    | 3 / 5                | 2 / 5               |
+
+* b
+
+The compiled code:
+
+#+begin_src scheme
+  ((assign
+    val
+    (op make-compiled-procedure)
+    (label entry1)
+    (reg env))
+   (goto (label after-lambda2))
+   entry1
+   (assign env (op compiled-procedure-env) (reg proc))
+   (assign
+    env
+    (op extend-environment)
+    (const (n))
+    (reg argl)
+    (reg env))
+   (save continue)
+   (save env)
+   (assign proc (op lookup-variable-value) (const =) (reg env))
+   (assign val (const 1))
+   (assign argl (op list) (reg val))
+   (assign
+    val
+    (op lexical-address-lookup)
+    (const (0 . 0))
+    (reg env))
+   (assign argl (op cons) (reg val) (reg argl))
+   (test (op primitive-procedure?) (reg proc))
+   (branch (label primitive-branch6))
+   compiled-branch7
+   (assign continue (label after-call8))
+   (assign val (op compiled-procedure-entry) (reg proc))
+   (goto (reg val))
+   primitive-branch6
+   (assign
+    val
+    (op apply-primitive-procedure)
+    (reg proc)
+    (reg argl))
+   after-call8
+   (restore env)
+   (restore continue)
+   (test (op false?) (reg val))
+   (branch (label false-branch4))
+   true-branch3
+   (assign val (const 1))
+   (goto (reg continue))
+   false-branch4
+   (assign proc (op lookup-variable-value) (const *) (reg env))
+   (save continue)
+   (save proc)
+   (assign
+    val
+    (op lexical-address-lookup)
+    (const (0 . 0))
+    (reg env))
+   (assign argl (op list) (reg val))
+   (save argl)
+   (assign
+    proc
+    (op lookup-variable-value)
+    (const factorial)
+    (reg env))
+   (save proc)
+   (assign proc (op lookup-variable-value) (const -) (reg env))
+   (assign val (const 1))
+   (assign argl (op list) (reg val))
+   (assign
+    val
+    (op lexical-address-lookup)
+    (const (0 . 0))
+    (reg env))
+   (assign argl (op cons) (reg val) (reg argl))
+   (test (op primitive-procedure?) (reg proc))
+   (branch (label primitive-branch9))
+   compiled-branch10
+   (assign continue (label after-call11))
+   (assign val (op compiled-procedure-entry) (reg proc))
+   (goto (reg val))
+   primitive-branch9
+   (assign
+    val
+    (op apply-primitive-procedure)
+    (reg proc)
+    (reg argl))
+   after-call11
+   (assign argl (op list) (reg val))
+   (restore proc)
+   (test (op primitive-procedure?) (reg proc))
+   (branch (label primitive-branch12))
+   compiled-branch13
+   (assign continue (label after-call14))
+   (assign val (op compiled-procedure-entry) (reg proc))
+   (goto (reg val))
+   primitive-branch12
+   (assign
+    val
+    (op apply-primitive-procedure)
+    (reg proc)
+    (reg argl))
+   after-call14
+   (restore argl)
+   (assign argl (op cons) (reg val) (reg argl))
+   (restore proc)
+   (restore continue)
+   (test (op primitive-procedure?) (reg proc))
+   (branch (label primitive-branch15))
+   compiled-branch16
+   (assign val (op compiled-procedure-entry) (reg proc))
+   (goto (reg val))
+   primitive-branch15
+   (assign
+    val
+    (op apply-primitive-procedure)
+    (reg proc)
+    (reg argl))
+   (goto (reg continue))
+   after-call17
+   after-if5
+   after-lambda2
+   (perform
+    (op define-variable!)
+    (const factorial)
+    (reg val)
+    (reg env))
+   (assign val (const ok)))
+#+end_src
+
+Comparing it with the controller of the special-purpose machine, we can see that it performs lots of unnecessary save and restore when calling procedures such as ~*~ and ~+~. Open addressing in exercise 5.38 can help here.
