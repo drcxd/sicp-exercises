@@ -103,6 +103,8 @@
    (list '+ +)
    (list '- -)
    (list '* *)
-   (list '= =)))
+   (list '= =)
+   (list '< <)
+   (list '> >)))
 
 (#%provide machine-operations)
