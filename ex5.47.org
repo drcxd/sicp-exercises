@@ -1,0 +1,5 @@
+#+title: Exercise 5.47
+
+I  write a procedure ~interpreted-proc-appl~ which share the same structure as ~compile-proc-appl~. I also change the ~compile-procedure-call~ so that it becomes a three way branch, selecting from primitive, compiled and interpreted procedures.
+
+One thing worth noting is that, because we are jumping from a piece of compiled code to a piece of interpreter code, we have to accommodate for the interpreter code. To be more specific, since we are jumping to ~compound-apply~ which is in the middle of the interpreter's routine of applying a procedure, we must consider what the interpreter has done before it, because the code after it is assuming the code before it has been executed, which is the case in a normal execution of the interpreter. Thus, I add ~(save continue)~ before jumping to ~compound-apply~, for the ~(restore continue)~ after the ~ev-sequence-last-exp~.

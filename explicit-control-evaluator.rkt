@@ -4,7 +4,8 @@
 (#%require "./register-machine-operations.rkt")
 
 (define controller
-  '((branch (label external-entry))
+  '((assign compapp (label compound-apply))
+    (branch (label external-entry))
     read-eval-print-loop
     (perform (op initialize-stack))
     (perform
@@ -256,7 +257,7 @@
 
 (define eceval
   (make-machine
-   '(exp env val continue proc argl unev)
+   '(exp env val continue proc argl unev compapp)
    machine-operations
    controller))
 
