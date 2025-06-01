@@ -1,0 +1,3 @@
+#+title: Exercise 5.48
+
+Basically, I replicated the ~compile-and-go~ procedure given by the text. However, since the ~compile-and-run~ is a primitive procedure, I arrange the explicit control evaluator to finish evaluate this procedure, then at the beginning of the next loop, it executes the compiled code. I have to introduce a new flag register to indicate that there is compiled code to be executed. Also, I have to introduce a new register to hold the starting point of the compiled code, since the ~val~ register is used after ~compile-and-run~ is executed.

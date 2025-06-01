@@ -2,10 +2,14 @@
 
 (#%require "./register-machine-simulator.rkt")
 (#%require "./register-machine-operations.rkt")
+(#%require "./metacircular-evaluator-env.rkt")
+(#%require "./compiler.rkt")
 
 (define controller
   '((branch (label external-entry))
     read-eval-print-loop
+    (test (op >) (reg cflag) (const 0))
+    (branch (label run-compiled-code))
     (perform (op initialize-stack))
     (perform
      (op prompt-for-input) (const ";;EC-Eval input:"))
@@ -23,6 +27,13 @@
     (assign env (op get-global-environment))
     (assign continue (label print-result))
     (goto (reg val))
+
+    run-compiled-code
+    (assign cflag (const 0))
+    (perform (op initialize-stack))
+    (assign env (op get-global-environment))
+    (assign continue (label print-result))
+    (goto (reg ccode))
 
     eval-dispatch
     (test (op self-evaluating?) (reg exp))
@@ -256,12 +267,25 @@
 
 (define eceval
   (make-machine
-   '(exp env val continue proc argl unev)
+   '(exp env val continue proc argl unev ccode cflag)
    machine-operations
    controller))
 
+;; Exercise 5.48
+(define (compile-and-run expression)
+  (let ((instructions
+         (assemble
+          (statements
+           (compile expression 'val 'return the-compile-environment))
+          eceval)))
+    (set-register-contents! eceval 'ccode instructions)
+    (set-register-contents! eceval 'cflag 1)))
+
+(define-variable! 'compile-and-run (list 'primitive compile-and-run)  the-global-environment)
+
 (define (start-eceval)
   (set-register-contents! eceval 'flag false)
+  (set-register-contents! eceval 'cflag 0)
   (start eceval))
 
 (#%provide eceval
