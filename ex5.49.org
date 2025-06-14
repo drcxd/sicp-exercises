@@ -1,0 +1,21 @@
+#+title: Exercise 5.49
+
+The main problem in this exercise is about self-reference. That is, we are going to design a machine that can modify itself.
+
+For the explicit control evaluator, once the machine is created (after calling ~make-machine~), its behavior (code) would never change. However, this exercise requires us to create a machine, which can use the input expression to extend itself.
+
+Since calling ~make-machine~ requires we define the controller of the machine first, while the controller of the machine has to call ~assemble~, which requires the to be extended machine as an argument, there is a infinite regression: the machine depends on the controller, while the controller depends on the machine.
+
+My solution to the problem is to extend the machine operations so that it holds a reference to itself. (See ~assemble-for-self~ in =ex5.49.rkt=.) This seems like cheating to me, but I can not figure out any other solution. Maybe we can add a new register ~self~ to the machine. Then, after the machine is created, we assign the register the reference to the machine.
+
+#+begin_src scheme
+  (define m
+    (make-machine
+     '(exp env val continue proc argl unev self)
+     machine-operations
+     controller))
+
+  (set-machine-register! machine 'self machine)
+#+end_src
+
+Then, in the controller code, we can use this register to reference the machine.
