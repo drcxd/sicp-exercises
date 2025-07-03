@@ -1,0 +1,21 @@
+#+title: Exercise 5.52
+
+This exercise is more difficult than I have thought.
+
+A C program must manage memory for itself. Thus, simply compiling ~(cons x y)~ requires some effort. More over, C is a strict-typed language while Scheme is not, then compiling the Scheme procedure:
+
+#+begin_src scheme
+  (lambda (f x y) (+ x y))
+#+end_src
+
+becomes a non-trivial task. In Scheme, it defines a procedure and it is accessible through the symbol ~f~ in the current environment. What will be the corresponding, compiled C instructions then? Is it
+
+#+begin_src C
+  int f(int x, int y) { return x + y; }
+#+end_src
+
+but this function does not work for floating numbers. Generally speaking, the lacking of strict type checking in Scheme makes it difficult to directly translate it to C.
+
+Also, the word "compiling" bewilders me, since the original compiler transforms Scheme program into some assemble code of a certain machine. However, when transforming to C, it is not based on a certain machine. (Should I first implement a machine simulator in C? I do not think so.) Then, it leaves the only option of translating the Scheme code to equivalent C code, but, as I have described above, it is of substantial difficulty.
+
+For now, I can not see how to finish this exercise, so I can only regretfully leave it undone.
